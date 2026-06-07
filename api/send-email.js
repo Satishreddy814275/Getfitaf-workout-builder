@@ -91,7 +91,7 @@ export default async function handler(req, res) {
 
         <!-- WORKOUT CONTENT -->
         <tr>
-          <td style="background:#0a0a0a;padding:32px 40px">
+          <td style="background:#0a0a0a;padding:32px 40px;color:#eeeeee;font-size:13px;line-height:1.8">
             ${workoutHtml}
           </td>
         </tr>
