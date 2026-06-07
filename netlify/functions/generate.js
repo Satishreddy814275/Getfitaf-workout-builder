@@ -26,7 +26,7 @@ exports.handler = async function(event, context) {
         "anthropic-version": "2023-06-01"
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-4-5",
         max_tokens: 4000,
         system: "You are an expert personal trainer at GetFitAF. Build precise structured workout plans. Use markdown tables for sessions. Be specific with exercise names, sets, reps, and rest. Write directly to the client by name. Tailor everything to their exact profile.",
         messages: [{ role: "user", content: prompt }]
