@@ -528,7 +528,7 @@ Table: Stretch | Duration
 Be specific. Use real exercise names. Include sets, reps, rest periods. Write directly to ${state.firstName}.`;
 
   try{
-    const res=await fetch("/.netlify/functions/generate",{
+    const res=await fetch("/api/generate",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify({prompt:prompt})
