@@ -24,7 +24,7 @@ export default async function handler(req, res) {
         ).join('');
         const trs = rows.trim().split('\n').map((row, i) => {
           const tds = row.split('|').slice(1,-1).map(c =>
-            `<td style="padding:8px 12px;border-bottom:1px solid #1a1a1a;color:#cccccc;font-size:13px;vertical-align:top">${c.trim()}</td>`
+            `<td style="padding:8px 12px;border-bottom:1px solid #1a1a1a;color:#eeeeee;font-size:13px;vertical-align:top">${c.trim()}</td>`
           ).join('');
           const bg = i % 2 === 0 ? '#111111' : '#0f0f0f';
           return tds ? `<tr style="background:${bg}">${tds}</tr>` : '';
@@ -32,6 +32,9 @@ export default async function handler(req, res) {
         return `<table style="width:100%;border-collapse:collapse;margin:12px 0;border-radius:6px;overflow:hidden">\
 <thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table>`;
       });
+
+      // H1
+      html = html.replace(/^# (.+)$/gm, '<h1 style="font-family:Arial,sans-serif;font-size:18px;font-weight:900;color:#ffffff;margin:24px 0 16px;letter-spacing:1px">$1</h1>');
 
       // H2
       html = html.replace(/^## (.+)$/gm, '<h2 style="font-family:Arial,sans-serif;font-size:16px;font-weight:700;color:#F5B800;background:#111;padding:10px 14px;border-left:3px solid #F5B800;margin:24px 0 12px;text-transform:uppercase;letter-spacing:1px">$1</h2>');
@@ -42,8 +45,11 @@ export default async function handler(req, res) {
       // Bold
       html = html.replace(/\*\*(.+?)\*\*/g, '<strong style="color:#ffffff">$1</strong>');
 
+      // Numbered lists
+      html = html.replace(/^(\d+)\. (.+)$/gm, '<div style="margin:12px 0;padding:12px 14px;background:#111111;border-radius:6px;border-left:2px solid #333"><span style="color:#F5B800;font-weight:700;font-size:13px">$1.</span> <span style="color:#eeeeee;font-size:13px;line-height:1.7">$2</span></div>');
+
       // Bullet points
-      html = html.replace(/^[-*] (.+)$/gm, '<li style="color:#cccccc;font-size:13px;margin:4px 0;line-height:1.6">$1</li>');
+      html = html.replace(/^[-*] (.+)$/gm, '<li style="color:#eeeeee;font-size:13px;margin:4px 0;line-height:1.6">$1</li>');
       html = html.replace(/(<li[^>]*>.*<\/li>)/gs, '<ul style="padding-left:20px;margin:8px 0">$1</ul>');
 
       // Line breaks
@@ -77,7 +83,7 @@ export default async function handler(req, res) {
         <tr>
           <td style="background:#0f0f0f;padding:32px 40px;border-bottom:1px solid #1a1a1a">
             <p style="margin:0 0 12px;font-size:20px;font-weight:700;color:#ffffff">Hey ${name}! 💪</p>
-            <p style="margin:0;font-size:14px;color:#999;line-height:1.7">
+            <p style="margin:0;font-size:14px;color:#dddddd;line-height:1.7">
               Your personalised workout plan is ready. This programme has been built specifically for your goals, fitness level, and available equipment. Follow it consistently and results will come.
             </p>
           </td>
@@ -93,7 +99,7 @@ export default async function handler(req, res) {
         <!-- CTA -->
         <tr>
           <td style="background:#111111;padding:32px 40px;text-align:center;border-top:1px solid #222">
-            <p style="margin:0 0 20px;font-size:14px;color:#999;line-height:1.7">
+            <p style="margin:0 0 20px;font-size:14px;color:#dddddd;line-height:1.7">
               Want a fully customised programme with ongoing coaching, progression tracking, and expert guidance?
             </p>
             <a href="https://getfitaf.fitness" style="display:inline-block;background:#F5B800;color:#000000;text-decoration:none;padding:14px 36px;border-radius:4px;font-size:13px;font-weight:800;letter-spacing:2px;text-transform:uppercase">Work With Satish →</a>
