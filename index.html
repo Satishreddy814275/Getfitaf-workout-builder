@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>GetFitAF — Build Your Workout</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Bebas+Neue&display=swap');
+:root{--bg:#0a0a0a;--bg2:#111111;--bg3:#1a1a1a;--gold:#F5B800;--gold2:#FFD055;--gold-dim:#a07c00;--white:#FFFFFF;--gray:#888888;--gray2:#444444;--border:#222222;--success:#4CAF50;--error:#e53935;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--white);font-family:'Inter',sans-serif;min-height:100vh;overflow-x:hidden;}
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 24px;position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;top:-200px;left:50%;transform:translateX(-50%);width:800px;height:800px;background:radial-gradient(circle,rgba(245,184,0,0.07) 0%,transparent 70%);pointer-events:none;}
+.logo-wrap{display:flex;align-items:center;gap:14px;margin-bottom:48px;}
+.kettlebell-svg{width:52px;height:52px;filter:drop-shadow(0 0 12px rgba(245,184,0,0.5));}
+.logo-text{font-family:'Bebas Neue',sans-serif;font-size:2.4rem;letter-spacing:3px;background:linear-gradient(135deg,var(--gold) 0%,var(--gold2) 50%,var(--gold) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.hero h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(2.8rem,8vw,5.5rem);letter-spacing:2px;line-height:1;margin-bottom:20px;}
+.hero h1 span{background:linear-gradient(135deg,var(--gold) 0%,var(--gold2) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.hero p{font-size:1.1rem;color:var(--gray);max-width:480px;line-height:1.7;margin-bottom:48px;}
+.btn-primary{background:linear-gradient(135deg,var(--gold) 0%,var(--gold2) 100%);color:#000;border:none;padding:18px 48px;font-size:1rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;border-radius:4px;cursor:pointer;transition:all 0.2s;font-family:'Inter',sans-serif;}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(245,184,0,0.35);}
+.btn-primary:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
+.form-container{display:none;max-width:680px;margin:0 auto;padding:40px 24px 80px;}
+.form-container.active{display:block;}
+.form-header{display:flex;align-items:center;gap:12px;margin-bottom:40px;padding-bottom:24px;border-bottom:1px solid var(--border);}
+.back-btn{background:none;border:1px solid var(--border);color:var(--gray);padding:8px 16px;border-radius:4px;cursor:pointer;font-size:0.85rem;transition:all 0.2s;font-family:'Inter',sans-serif;}
+.back-btn:hover{border-color:var(--gold);color:var(--gold);}
+.progress-bar{height:3px;background:var(--border);border-radius:2px;flex:1;overflow:hidden;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:2px;transition:width 0.4s ease;}
+.step-label{font-size:0.8rem;color:var(--gray);white-space:nowrap;}
+.step{display:none;animation:fadeIn 0.3s ease;}
+.step.active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+.step-title{font-size:1.6rem;font-weight:700;margin-bottom:8px;}
+.step-title span{color:var(--gold);}
+.step-sub{color:var(--gray);margin-bottom:28px;font-size:0.95rem;}
+.field-group{margin-bottom:24px;}
+.field-label{display:block;font-size:0.85rem;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;}
+.field-input{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--white);padding:14px 16px;border-radius:6px;font-size:1rem;font-family:'Inter',sans-serif;transition:border-color 0.2s;outline:none;}
+.field-input:focus{border-color:var(--gold);}
+.field-input::placeholder{color:var(--gray2);}
+select.field-input{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 16px center;background-color:var(--bg3);padding-right:40px;}
+select.field-input option{background:var(--bg3);}
+.option-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:8px;}
+.option-grid.cols-3{grid-template-columns:1fr 1fr 1fr;}
+.option-card{background:var(--bg3);border:1.5px solid var(--border);border-radius:8px;padding:16px;cursor:pointer;transition:all 0.2s;text-align:center;}
+.option-card:hover{border-color:var(--gold-dim);}
+.option-card.selected{border-color:var(--gold);background:rgba(245,184,0,0.08);}
+.option-card .icon{font-size:1.6rem;margin-bottom:8px;}
+.option-card .label{font-size:0.9rem;font-weight:600;margin-bottom:4px;}
+.option-card .desc{font-size:0.75rem;color:var(--gray);line-height:1.4;}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;margin-bottom:10px;cursor:pointer;transition:border-color 0.2s;}
+.toggle-row:hover{border-color:var(--gold-dim);}
+.toggle-row.selected{border-color:var(--gold);background:rgba(245,184,0,0.06);}
+.toggle-row .t-label{font-size:0.95rem;font-weight:500;}
+.toggle-row .t-check{width:20px;height:20px;border:2px solid var(--gray2);border-radius:50%;display:flex;align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0;}
+.toggle-row.selected .t-check{background:var(--gold);border-color:var(--gold);}
+.toggle-row.selected .t-check::after{content:'✓';font-size:11px;color:#000;font-weight:700;}
+.days-grid{display:flex;gap:8px;flex-wrap:wrap;}
+.day-btn{width:52px;height:52px;border-radius:50%;border:1.5px solid var(--border);background:var(--bg3);color:var(--white);font-size:0.9rem;font-weight:600;cursor:pointer;transition:all 0.2s;font-family:'Inter',sans-serif;}
+.day-btn:hover{border-color:var(--gold-dim);}
+.day-btn.selected{border-color:var(--gold);background:rgba(245,184,0,0.12);color:var(--gold);}
+.step-nav{display:flex;justify-content:space-between;align-items:center;margin-top:36px;gap:12px;}
+.btn-back-step{background:none;border:1px solid var(--border);color:var(--gray);padding:14px 28px;border-radius:4px;cursor:pointer;font-size:0.9rem;font-weight:600;font-family:'Inter',sans-serif;transition:all 0.2s;}
+.btn-back-step:hover{border-color:var(--gold);color:var(--gold);}
+.btn-next{background:linear-gradient(135deg,var(--gold) 0%,var(--gold2) 100%);color:#000;border:none;padding:14px 36px;border-radius:4px;cursor:pointer;font-size:0.9rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;font-family:'Inter',sans-serif;transition:all 0.2s;}
+.btn-next:hover{box-shadow:0 4px 20px rgba(245,184,0,0.3);transform:translateY(-1px);}
+.btn-next:disabled{opacity:0.4;cursor:not-allowed;transform:none;}
+.generating-screen{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;text-align:center;padding:40px 24px;}
+.generating-screen.active{display:flex;}
+.spinner{width:64px;height:64px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin 1s linear infinite;margin-bottom:28px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.gen-title{font-family:'Bebas Neue',sans-serif;font-size:2rem;letter-spacing:2px;margin-bottom:12px;color:var(--gold);}
+.gen-sub{color:var(--gray);font-size:0.95rem;line-height:1.7;}
+.result-screen{display:none;max-width:800px;margin:0 auto;padding:40px 24px 80px;}
+.result-screen.active{display:block;}
+.result-header{text-align:center;margin-bottom:40px;padding-bottom:32px;border-bottom:1px solid var(--border);}
+.result-badge{display:inline-block;background:rgba(245,184,0,0.1);border:1px solid var(--gold);color:var(--gold);padding:6px 16px;border-radius:20px;font-size:0.8rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:16px;}
+.result-header h2{font-family:'Bebas Neue',sans-serif;font-size:2.8rem;letter-spacing:2px;margin-bottom:8px;}
+.result-header p{color:var(--gray);font-size:0.95rem;}
+.workout-content{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:32px;margin-bottom:32px;line-height:1.8;font-size:0.95rem;color:#ddd;}
+.workout-content h2{font-family:'Bebas Neue',sans-serif;font-size:1.5rem;letter-spacing:2px;color:var(--gold);margin:28px 0 12px;padding-top:16px;border-top:1px solid var(--border);}
+.workout-content h2:first-child{margin-top:0;border-top:none;padding-top:0;}
+.workout-content h3{font-size:1rem;font-weight:700;color:var(--gold2);margin:20px 0 8px;text-transform:uppercase;letter-spacing:1px;}
+.workout-content table{width:100%;border-collapse:collapse;margin:12px 0;font-size:0.88rem;}
+.workout-content th{background:rgba(245,184,0,0.1);color:var(--gold);padding:8px 12px;text-align:left;font-size:0.78rem;letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid var(--border);}
+.workout-content td{padding:9px 12px;border-bottom:1px solid rgba(255,255,255,0.04);color:#ccc;vertical-align:top;}
+.workout-content tr:last-child td{border-bottom:none;}
+.workout-content p{margin:8px 0;}
+.workout-content strong{color:var(--white);}
+.workout-content ul,.workout-content ol{padding-left:20px;margin:8px 0;}
+.workout-content li{margin:4px 0;}
+.action-buttons{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;}
+.btn-action{display:flex;align-items:center;justify-content:center;gap:10px;padding:16px 24px;border-radius:6px;font-size:0.9rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all 0.2s;font-family:'Inter',sans-serif;border:none;}
+.btn-pdf{background:linear-gradient(135deg,var(--gold) 0%,var(--gold2) 100%);color:#000;}
+.btn-pdf:hover{box-shadow:0 4px 20px rgba(245,184,0,0.35);transform:translateY(-1px);}
+.btn-email{background:var(--bg3);color:var(--white);border:1px solid var(--border);}
+.btn-email:hover{border-color:var(--gold);color:var(--gold);}
+.btn-restart{width:100%;background:none;border:1px solid var(--border);color:var(--gray);padding:14px;border-radius:6px;cursor:pointer;font-size:0.9rem;font-weight:600;font-family:'Inter',sans-serif;transition:all 0.2s;text-transform:uppercase;letter-spacing:1px;}
+.btn-restart:hover{border-color:var(--gold);color:var(--gold);}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:100;align-items:center;justify-content:center;padding:24px;}
+.modal-overlay.active{display:flex;}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:36px;max-width:440px;width:100%;}
+.modal h3{font-size:1.3rem;font-weight:700;margin-bottom:8px;}
+.modal p{color:var(--gray);font-size:0.9rem;margin-bottom:24px;}
+.modal-note{background:rgba(245,184,0,0.06);border:1px solid rgba(245,184,0,0.2);border-radius:6px;padding:12px 14px;font-size:0.82rem;color:var(--gray);margin-bottom:20px;line-height:1.5;}
+.modal-note strong{color:var(--gold2);}
+.modal-actions{display:flex;gap:12px;margin-top:24px;}
+.btn-modal-cancel{flex:1;background:none;border:1px solid var(--border);color:var(--gray);padding:12px;border-radius:4px;cursor:pointer;font-family:'Inter',sans-serif;font-weight:600;transition:all 0.2s;}
+.btn-modal-cancel:hover{border-color:var(--gray);}
+.btn-modal-send{flex:2;background:linear-gradient(135deg,var(--gold) 0%,var(--gold2) 100%);color:#000;border:none;padding:12px;border-radius:4px;cursor:pointer;font-family:'Inter',sans-serif;font-weight:800;font-size:0.9rem;letter-spacing:1px;text-transform:uppercase;transition:all 0.2s;}
+.btn-modal-send:disabled{opacity:0.5;cursor:not-allowed;}
+.toast{position:fixed;bottom:32px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--bg3);border:1px solid var(--border);color:var(--white);padding:14px 24px;border-radius:8px;font-size:0.9rem;font-weight:500;z-index:200;transition:transform 0.3s ease;white-space:nowrap;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.success{border-color:var(--success);}
+.toast.error{border-color:var(--error);}
+.char-count{font-size:0.8rem;color:var(--gray);text-align:right;margin-top:6px;}
+textarea.field-input{resize:vertical;min-height:80px;}
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero" id="heroScreen">
+  <div class="logo-wrap">
+    <svg class="kettlebell-svg" viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="kg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#F5B800"/><stop offset="100%" stop-color="#FFD055"/></linearGradient></defs>
+      <path d="M32 28 Q32 8 50 8 Q68 8 68 28" stroke="url(#kg)" stroke-width="9" stroke-linecap="round" fill="none"/>
+      <rect x="36" y="28" width="28" height="10" rx="4" fill="url(#kg)"/>
+      <ellipse cx="50" cy="76" rx="36" ry="32" fill="url(#kg)"/>
+      <ellipse cx="40" cy="62" rx="8" ry="6" fill="rgba(255,255,255,0.15)"/>
+    </svg>
+    <span class="logo-text">GETFITAF</span>
+  </div>
+  <h1>YOUR WORKOUT.<br><span>YOUR WAY.</span></h1>
+  <p>Answer a few quick questions and we'll build you a personalised workout plan — powered by expert methodology.</p>
+  <button class="btn-primary" onclick="startForm()">BUILD MY WORKOUT →</button>
+</div>
+
+<!-- FORM -->
+<div class="form-container" id="formScreen">
+  <div class="form-header">
+    <button class="back-btn" onclick="goHome()">← Home</button>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:16%"></div></div>
+    <span class="step-label" id="stepLabel">Step 1 of 6</span>
+  </div>
+
+  <!-- STEP 1 -->
+  <div class="step active" id="step1">
+    <div class="step-title">Hey there 👋 Let's <span>get started</span></div>
+    <div class="step-sub">We need a few details to personalise your plan.</div>
+    <div class="field-group">
+      <label class="field-label">Your First Name</label>
+      <input type="text" class="field-input" id="firstName" placeholder="e.g. Alex" oninput="validateStep1()"/>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Your Email Address</label>
+      <input type="email" class="field-input" id="email" placeholder="you@example.com" oninput="validateStep1()"/>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Your Gender <span style="color:var(--gray);font-weight:400;font-size:0.8rem">(helps personalise exercises)</span></label>
+      <select class="field-input" id="gender" onchange="validateStep1()">
+        <option value="">Select...</option>
+        <option>Male</option>
+        <option>Female</option>
+        <option>Prefer not to say</option>
+      </select>
+    </div>
+    <div class="step-nav">
+      <span></span>
+      <button class="btn-next" id="next1" onclick="goStep(2)" disabled>Next →</button>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="step" id="step2">
+    <div class="step-title">What's your <span>fitness level?</span></div>
+    <div class="step-sub">Be honest — this shapes everything about your plan.</div>
+    <div class="option-grid">
+      <div class="option-card" onclick="selectOption(this,'level','absolute-beginner')">
+        <div class="icon">🌱</div><div class="label">Absolute Beginner</div>
+        <div class="desc">Never trained before, or returning after a long break</div>
+      </div>
+      <div class="option-card" onclick="selectOption(this,'level','beginner')">
+        <div class="icon">💪</div><div class="label">Beginner</div>
+        <div class="desc">Some exercise experience, limited structured training</div>
+      </div>
+      <div class="option-card" onclick="selectOption(this,'level','intermediate')">
+        <div class="icon">🔥</div><div class="label">Intermediate</div>
+        <div class="desc">2+ months of consistent, structured training</div>
+      </div>
+      <div class="option-card" onclick="selectOption(this,'level','athlete')">
+        <div class="icon">⚡</div><div class="label">Athlete</div>
+        <div class="desc">Advanced or sport-specific training background</div>
+      </div>
+    </div>
+    <div class="step-nav">
+      <button class="btn-back-step" onclick="goStep(1)">← Back</button>
+      <button class="btn-next" id="next2" onclick="goStep(3)" disabled>Next →</button>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="step" id="step3">
+    <div class="step-title">What's your <span>primary goal?</span></div>
+    <div class="step-sub">Pick the one that matters most right now.</div>
+    <div class="option-grid">
+      <div class="option-card" onclick="selectOption(this,'goal','fat-loss')">
+        <div class="icon">🔥</div><div class="label">Fat Loss</div>
+        <div class="desc">Burn fat, improve conditioning, feel leaner</div>
+      </div>
+      <div class="option-card" onclick="selectOption(this,'goal','muscle-gain')">
+        <div class="icon">💪</div><div class="label">Muscle Gain</div>
+        <div class="desc">Build strength and size</div>
+      </div>
+      <div class="option-card" onclick="selectOption(this,'goal','general-fitness')">
+        <div class="icon">🏃</div><div class="label">General Fitness</div>
+        <div class="desc">Move better, feel better, stay healthy</div>
+      </div>
+      <div class="option-card" onclick="selectOption(this,'goal','rehab')">
+        <div class="icon">🩹</div><div class="label">Rehab / Recovery</div>
+        <div class="desc">Working around an injury or limitation</div>
+      </div>
+    </div>
+    <div class="step-nav">
+      <button class="btn-back-step" onclick="goStep(2)">← Back</button>
+      <button class="btn-next" id="next3" onclick="goStep(4)" disabled>Next →</button>
+    </div>
+  </div>
+
+  <!-- STEP 4 -->
+  <div class="step" id="step4">
+    <div class="step-title">What equipment do <span>you have?</span></div>
+    <div class="step-sub">We'll build around what you've got.</div>
+    <div class="option-grid cols-3">
+      <div class="option-card" onclick="selectOption(this,'equipment','bodyweight')">
+        <div class="icon">🧘</div><div class="label">No Equipment</div><div class="desc">Bodyweight only</div>
+      </div>
+      <div class="option-card" onclick="selectOption(this,'equipment','home')">
+        <div class="icon">🏠</div><div class="label">Home Gym</div><div class="desc">Bands, dumbbells, basic kit</div>
+      </div>
+      <div class="option-card" onclick="selectOption(this,'equipment','full-gym')">
+        <div class="icon">🏋️</div><div class="label">Full Gym</div><div class="desc">Barbells, machines, all equipment</div>
+      </div>
+    </div>
+    <div class="step-nav">
+      <button class="btn-back-step" onclick="goStep(3)">← Back</button>
+      <button class="btn-next" id="next4" onclick="goStep(5)" disabled>Next →</button>
+    </div>
+  </div>
+
+  <!-- STEP 5 -->
+  <div class="step" id="step5">
+    <div class="step-title">How many days <span>per week?</span></div>
+    <div class="step-sub">Pick how many days you can commit to training.</div>
+    <div class="field-group">
+      <label class="field-label">Days Available</label>
+      <div class="days-grid">
+        <button class="day-btn" onclick="selectDays(this,3)">3</button>
+        <button class="day-btn" onclick="selectDays(this,4)">4</button>
+        <button class="day-btn" onclick="selectDays(this,5)">5</button>
+        <button class="day-btn" onclick="selectDays(this,6)">6</button>
+      </div>
+    </div>
+    <div class="field-group" style="margin-top:28px">
+      <label class="field-label">Do you enjoy cardio / HIIT?</label>
+      <div class="toggle-row" onclick="selectToggle(this,'cardio','love-it')">
+        <span class="t-label">Love it — bring it on</span><div class="t-check"></div>
+      </div>
+      <div class="toggle-row" onclick="selectToggle(this,'cardio','okay')">
+        <span class="t-label">I'm okay with it</span><div class="t-check"></div>
+      </div>
+      <div class="toggle-row" onclick="selectToggle(this,'cardio','dislike')">
+        <span class="t-label">I'd rather skip it</span><div class="t-check"></div>
+      </div>
+    </div>
+    <div class="step-nav">
+      <button class="btn-back-step" onclick="goStep(4)">← Back</button>
+      <button class="btn-next" id="next5" onclick="goStep(6)" disabled>Next →</button>
+    </div>
+  </div>
+
+  <!-- STEP 6 -->
+  <div class="step" id="step6">
+    <div class="step-title">Almost there 🙌 Any <span>limitations?</span></div>
+    <div class="step-sub">Tell us about injuries or anything we should know. Leave blank if none.</div>
+    <div class="field-group">
+      <label class="field-label">Injuries or Limitations</label>
+      <textarea class="field-input" id="injuries" placeholder="e.g. Lower back pain, bad left knee, shoulder injury..." rows="3" oninput="updateCharCount(this,'injCount',300)"></textarea>
+      <div class="char-count" id="injCount">0 / 300</div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Anything else? <span style="color:var(--gray);font-weight:400;font-size:0.8rem">(optional)</span></label>
+      <textarea class="field-input" id="notes" placeholder="e.g. I prefer morning workouts, I dislike running..." rows="3" oninput="updateCharCount(this,'notesCount',300)"></textarea>
+      <div class="char-count" id="notesCount">0 / 300</div>
+    </div>
+    <div class="step-nav">
+      <button class="btn-back-step" onclick="goStep(5)">← Back</button>
+      <button class="btn-next" id="next6" onclick="generateWorkout()">Build My Workout 🔥</button>
+    </div>
+  </div>
+</div>
+
+<!-- GENERATING -->
+<div class="generating-screen" id="generatingScreen">
+  <div class="spinner"></div>
+  <div class="gen-title">BUILDING YOUR PLAN</div>
+  <div class="gen-sub">Applying expert methodology to your profile...<br>This takes about 20–30 seconds.</div>
+</div>
+
+<!-- RESULT -->
+<div class="result-screen" id="resultScreen">
+  <div class="result-header">
+    <div class="logo-wrap" style="justify-content:center;margin-bottom:20px">
+      <svg style="width:36px;height:36px;filter:drop-shadow(0 0 8px rgba(245,184,0,0.4))" viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs><linearGradient id="kg2" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#F5B800"/><stop offset="100%" stop-color="#FFD055"/></linearGradient></defs>
+        <path d="M32 28 Q32 8 50 8 Q68 8 68 28" stroke="url(#kg2)" stroke-width="9" stroke-linecap="round" fill="none"/>
+        <rect x="36" y="28" width="28" height="10" rx="4" fill="url(#kg2)"/>
+        <ellipse cx="50" cy="76" rx="36" ry="32" fill="url(#kg2)"/>
+        <ellipse cx="40" cy="62" rx="8" ry="6" fill="rgba(255,255,255,0.15)"/>
+      </svg>
+      <span class="logo-text" style="font-size:1.4rem">GETFITAF</span>
+    </div>
+    <div class="result-badge">Your Personalised Plan</div>
+    <h2 id="resultName">YOUR WORKOUT PLAN</h2>
+    <p id="resultSubtitle">Built specifically for your goals and fitness level</p>
+  </div>
+  <div class="workout-content" id="workoutContent"></div>
+  <div class="action-buttons">
+    <button class="btn-action btn-pdf" onclick="downloadPDF()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+      Download PDF
+    </button>
+    <button class="btn-action btn-email" onclick="openEmailModal()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 8l10 6 10-6"/></svg>
+      Email My Plan
+    </button>
+  </div>
+  <button class="btn-restart" onclick="goHome()">↩ Build Another Workout</button>
+</div>
+
+<!-- EMAIL MODAL -->
+<div class="modal-overlay" id="emailModal">
+  <div class="modal">
+    <h3>📧 Email Your Plan</h3>
+    <p>We'll send your full workout plan straight to your inbox.</p>
+    <div class="modal-note">
+      <strong>Setup required:</strong> Email delivery via Resend needs a one-time backend setup. Once connected to <strong>satish@getfitaf.fitness</strong>, this button will send instantly.
+    </div>
+    <div class="field-group">
+      <label class="field-label">Send To</label>
+      <input type="email" class="field-input" id="modalEmail" placeholder="you@example.com"/>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-modal-cancel" onclick="closeEmailModal()">Cancel</button>
+      <button class="btn-modal-send" id="sendEmailBtn" onclick="sendEmail()">Send It →</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const state={firstName:'',email:'',gender:'',level:'',goal:'',equipment:'',days:null,cardio:'',injuries:'',notes:'',workoutMarkdown:''};
+const levelLabels={'absolute-beginner':'Absolute Beginner','beginner':'Beginner','intermediate':'Intermediate','athlete':'Athlete'};
+const goalLabels={'fat-loss':'Fat Loss','muscle-gain':'Muscle Gain','general-fitness':'General Fitness','rehab':'Rehab / Recovery'};
+const equipLabels={'bodyweight':'No Equipment (Bodyweight)','home':'Home Gym (Bands/Dumbbells)','full-gym':'Full Gym Access'};
+const cardioLabels={'love-it':'Loves cardio and HIIT','okay':'Okay with some cardio','dislike':'Prefers to skip cardio'};
+
+function startForm(){document.getElementById('heroScreen').style.display='none';document.getElementById('formScreen').classList.add('active');}
+function goHome(){
+  document.getElementById('heroScreen').style.display='flex';
+  ['formScreen','generatingScreen','resultScreen'].forEach(id=>{const el=document.getElementById(id);el.classList.remove('active');if(el.style)el.style.display='';});
+  Object.assign(state,{firstName:'',email:'',gender:'',level:'',goal:'',equipment:'',days:null,cardio:'',injuries:'',notes:'',workoutMarkdown:''});
+  document.querySelectorAll('.option-card').forEach(c=>c.classList.remove('selected'));
+  document.querySelectorAll('.toggle-row').forEach(r=>r.classList.remove('selected'));
+  document.querySelectorAll('.day-btn').forEach(b=>b.classList.remove('selected'));
+  ['firstName','email','injuries','notes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('gender').value='';
+  goStep(1);
+}
+function goStep(n){
+  document.querySelectorAll('.step').forEach(s=>s.classList.remove('active'));
+  document.getElementById('step'+n).classList.add('active');
+  const pct=(n/6)*100;
+  document.getElementById('progressFill').style.width=pct+'%';
+  document.getElementById('stepLabel').textContent=`Step ${n} of 6`;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function validateStep1(){
+  const name=document.getElementById('firstName').value.trim();
+  const email=document.getElementById('email').value.trim();
+  const gender=document.getElementById('gender').value;
+  const valid=name.length>0&&/\S+@\S+\.\S+/.test(email)&&gender;
+  document.getElementById('next1').disabled=!valid;
+  if(valid){state.firstName=name;state.email=email;state.gender=gender;}
+}
+function selectOption(el,key,val){
+  el.closest('.option-grid').querySelectorAll('.option-card').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+  state[key]=val;
+  const m={level:'next2',goal:'next3',equipment:'next4'};
+  if(m[key])document.getElementById(m[key]).disabled=false;
+}
+function selectDays(el,n){
+  document.querySelectorAll('.day-btn').forEach(b=>b.classList.remove('selected'));
+  el.classList.add('selected');
+  state.days=n;
+  checkStep5();
+}
+function selectToggle(el,key,val){
+  el.closest('.field-group').querySelectorAll('.toggle-row').forEach(r=>r.classList.remove('selected'));
+  el.classList.add('selected');
+  state[key]=val;
+  checkStep5();
+}
+function checkStep5(){document.getElementById('next5').disabled=!(state.days&&state.cardio);}
+function updateCharCount(el,cid,max){
+  if(el.value.length>max)el.value=el.value.slice(0,max);
+  document.getElementById(cid).textContent=`${el.value.length} / ${max}`;
+}
+
+async function generateWorkout(){
+  state.injuries=document.getElementById('injuries').value.trim();
+  state.notes=document.getElementById('notes').value.trim();
+  document.getElementById('formScreen').classList.remove('active');
+  document.getElementById('generatingScreen').classList.add('active');
+
+  const prompt=`You are a professional personal trainer at GetFitAF. Build a complete personalised workout plan using the following methodology.
+
+GETFITAF METHODOLOGY:
+
+SPLIT SELECTION RULES:
+- Fat loss + loves/okay cardio: Push/Pull/Legs + HIIT rolling cycle (6 days) or Upper/Lower/HIIT
+- Fat loss + dislikes cardio: Use PPL but embed HIIT finisher on Pull days
+- Muscle gain: Limit HIIT (max 1x/week after 2-3 months), focus on strength splits
+- 3-4 days available: Whole Body splits (WB A / Cardio / WB B or Upper/Lower/Whole Body)
+- 5-6 days: PPL or Upper/Lower splits
+- Fat loss: ALWAYS retain at least 1 cardio/HIIT session per week — non-negotiable
+- Muscle gain: Exclude HIIT in early phases
+
+MOVEMENT PATTERNS (must cover ALL across the full week):
+- Upper: Horizontal Push, Horizontal Pull, Vertical Push, Vertical Pull
+- Lower: Squat pattern, Hinge pattern, Lunge/Single-leg (both quad-dominant AND hamstring-dominant across week)
+- Optional: Carry pattern (farmer's walks)
+
+SESSION STRUCTURE (every session):
+1. Warm-up: 2-3 targeted activation exercises (not generic cardio), 15-20s rest between
+2. Main session: 5-6 exercises, max 1 hour
+3. Cool-down: 2-3 static stretches 20-60s each
+
+WARM-UP SELECTION BY SESSION TYPE:
+- Push/Upper day: Shoulder stability focus (external rotations, shoulder taps, dead bugs, Pallof press, bar plank)
+- Pull day: Lat/mid-back activation (single-arm lat pulldowns, IYTWs, face pulls, core work)
+- Lower day: Glute activation + core (clamshells, glute bridges, banded abductions, dead bugs, planks)
+
+BEGINNER RULES:
+- Week 1: Alternate Basic Prep (wall sits, push-up progressions, glute bridges, dead bugs, band rows/IYTWs) with Low-Impact HIIT (20s/40s intervals, march/step touches/jabs)
+- Week 2+: Progress to bodyweight/dumbbell movements
+- Push-up progression: wall → knee → eccentric knee → incline → eccentric floor → full push-up
+- No equipment pull options: IYTWs as primary; door frame rows acceptable
+- Sets: 2 sets in week 1; build to 3 sets by weeks 3-4
+- Rep range: 8-12 primarily; never below 5 reps on isolation; max 25 reps
+- HIIT: Cap at 30s work/30s rest for first 3-4 weeks
+- Impact progression (ONE new per session): shuffles → jumping jacks → Spiderman lunges → burpees
+
+INTERMEDIATE RULES:
+- PPL preferred; Whole Body if 3-4 days
+- Tier 1 barbell compounds ALWAYS first (barbell squat, deadlift, bent over row)
+- Power/plyometrics introduced: squat jumps, box jumps, plyo push-ups
+- Volume: 3 sets baseline; 4-5 sets on priority lifts
+- Strength range unlocked: can go below 5 reps on main compounds
+- HIIT: max 1x/week for muscle gain clients; always retained for fat loss
+- Rear delts: minimum 1 session/week must include face pulls or prone Y raises
+- Bulgarian split squat: always note that each set = double demand of bilateral; reduce if preceding work is heavy
+
+EXERCISE SEQUENCING:
+Power/Plyometric → Tier 1 Barbell Compounds → Other Barbell+DB Compounds → Machine Compounds → DB Isolation (large to small muscle) → Machine Isolation (large to small muscle)
+
+REST PERIODS:
+- 12-25 reps (endurance): 45s-1min
+- 6-12 reps (hypertrophy): 90s-2min
+- Under 6 reps (strength): 2-3min
+
+REHAB RULES (for injury clients):
+- Supported before unsupported (leg press before barbell squat)
+- Horizontal loading before vertical
+- Activate glutes and core BEFORE any hinge pattern — never start with hinge
+- Back pain: AVOID barbell squats, deadlifts, forward lunges, bent over rows, crunches, farmer's carry
+- Back pain USE: leg press, hip thruster, machine single-leg curl, machine abductions, Pallof press
+- Always: pain is the guide — stop and regress if any exercise causes pain
+
+CLIENT PROFILE:
+- Name: ${state.firstName}
+- Gender: ${state.gender}
+- Fitness Level: ${levelLabels[state.level]}
+- Goal: ${goalLabels[state.goal]}
+- Equipment: ${equipLabels[state.equipment]}
+- Days per week: ${state.days}
+- Cardio preference: ${cardioLabels[state.cardio]}
+- Injuries/Limitations: ${state.injuries||'None'}
+- Additional notes: ${state.notes||'None'}
+
+BUILD A COMPLETE WEEKLY WORKOUT PLAN. Use proper markdown with these sections:
+
+## YOUR WEEKLY SPLIT
+Explain which split you chose and WHY based on their specific profile.
+
+## WEEKLY SCHEDULE
+A table: Day | Session Type | Focus
+
+Then for EACH training day provide a full session:
+
+## [DAY NAME]: [SESSION TYPE]
+
+### Warm-Up (2 rounds, 15-20s rest between exercises)
+Table: Exercise | Reps/Duration | Notes
+
+### Main Session
+Table: Order | Exercise | Pattern | Sets | Reps | Rest | Notes
+
+### Cool-Down
+Table: Stretch | Duration
+
+## KEY COACHING NOTES FOR ${state.firstName.toUpperCase()}
+5 personalised bullet points based on their specific profile, level, and goals. Make these feel like a real trainer wrote them specifically for this person.
+
+Be specific. Use real exercise names. Include sets, reps, rest periods. Write directly to ${state.firstName}.`;
+
+  try{
+    const res=await fetch("/api/generate",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({prompt:prompt})
+    });
+    console.log("Fetch status:", res.status);
+    if(!res.ok){
+      const errBody=await res.text();
+      console.error("API error:", errBody);
+      throw new Error("HTTP "+res.status+": "+errBody.slice(0,300));
+    }
+    const data=await res.json();
+    if(!data.text){
+      throw new Error("Bad response: "+JSON.stringify(data).slice(0,300));
+    }
+    const markdown=data.text;
+    state.workoutMarkdown=markdown;
+    showResult(markdown);
+  }catch(e){
+    console.error("API call failed:", e.name, e.message);
+    const errMsg=e.message||"Unknown error";
+    document.getElementById("generatingScreen").classList.remove("active");
+    document.getElementById("generatingScreen").innerHTML=`
+      <div style="padding:40px;text-align:center;max-width:480px;margin:0 auto">
+        <p style="color:#e53935;font-size:1rem;font-weight:700;margin-bottom:12px">Connection Error</p>
+        <p style="color:#888;font-size:0.8rem;line-height:1.6;word-break:break-all;margin-bottom:20px">${errMsg}</p>
+        <button onclick="goStep(6)" style="background:var(--gold);color:#000;border:none;padding:12px 28px;border-radius:4px;cursor:pointer;font-weight:700;font-family:Inter,sans-serif">Try Again</button>
+      </div>`;
+    document.getElementById("generatingScreen").classList.add("active");
+  }
+}
+
+function showResult(md){
+  document.getElementById('generatingScreen').classList.remove('active');
+  document.getElementById('resultScreen').classList.add('active');
+  document.getElementById('resultName').textContent=`${state.firstName.toUpperCase()}'S WORKOUT PLAN`;
+  document.getElementById('resultSubtitle').textContent=`${levelLabels[state.level]} · ${goalLabels[state.goal]} · ${state.days} days/week`;
+  document.getElementById('workoutContent').innerHTML=renderMarkdown(md);
+  document.getElementById('modalEmail').value=state.email;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function renderMarkdown(md){
+  let h=md;
+  // Tables
+  h=h.replace(/\|(.+)\|\r?\n\|[-\| :]+\|\r?\n((?:\|.+\|\r?\n?)*)/g,(_,header,rows)=>{
+    const ths=header.split('|').slice(1,-1).map(c=>`<th>${c.trim()}</th>`).join('');
+    const trs=rows.trim().split('\n').map(row=>{
+      const cells=row.split('|').slice(1,-1);
+      return cells.length?`<tr>${cells.map(c=>`<td>${c.trim()}</td>`).join('')}</tr>`:'';
+    }).filter(Boolean).join('');
+    return `<table><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table>`;
+  });
+  h=h.replace(/^####\s+(.+)$/gm,'<h3>$1</h3>');
+  h=h.replace(/^###\s+(.+)$/gm,'<h3>$1</h3>');
+  h=h.replace(/^##\s+(.+)$/gm,'<h2>$1</h2>');
+  h=h.replace(/^#\s+(.+)$/gm,'<h2>$1</h2>');
+  h=h.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  h=h.replace(/^[-*]\s+(.+)$/gm,'<li>$1</li>');
+  h=h.replace(/(<li>[\s\S]+?<\/li>)/g,'<ul>$1</ul>');
+  h=h.replace(/\n{2,}/g,'</p><p>');
+  h=h.replace(/\n/g,'<br>');
+  return `<p>${h}</p>`;
+}
+
+function loadScript(src,cb){const s=document.createElement('script');s.src=src;s.onload=cb;s.onerror=()=>cb&&cb();document.head.appendChild(s);}
+
+function downloadPDF(){
+  if(!window.jspdf){
+    showToast('Loading PDF engine...','');
+    loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',()=>{
+      loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js',()=>{
+        setTimeout(generatePDF,300);
+      });
+    });
+    return;
+  }
+  generatePDF();
+}
+
+function generatePDF(){
+  try{
+    const {jsPDF}=window.jspdf;
+    const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+    const pageW=doc.internal.pageSize.getWidth();
+    const pageH=doc.internal.pageSize.getHeight();
+    const margin=18;
+    let y=0;
+    const gold=[245,184,0];const blk=[10,10,10];const wht=[255,255,255];const gry=[136,136,136];const dkGray=[26,26,26];const dkBorder=[50,50,50];
+
+    function addFooter(){
+      doc.setFontSize(8);doc.setTextColor(...gry);
+      doc.text('GetFitAF — getfitaf.fitness',margin,pageH-10);
+      doc.text(`${state.firstName}'s Workout Plan`,pageW-margin,pageH-10,{align:'right'});
+    }
+    function newPage(){doc.addPage();y=22;addFooter();}
+    function checkY(need=20){if(y+need>pageH-18)newPage();}
+
+    // Cover
+    doc.setFillColor(...blk);doc.rect(0,0,pageW,pageH,'F');
+    doc.setFillColor(...gold);doc.rect(0,0,pageW,6,'F');doc.rect(0,pageH-6,pageW,6,'F');
+    doc.setFontSize(32);doc.setFont('helvetica','bold');doc.setTextColor(...gold);
+    doc.text('GETFITAF',pageW/2,70,{align:'center'});
+    doc.setFontSize(11);doc.setFont('helvetica','normal');doc.setTextColor(...wht);
+    doc.text('PERSONALISED WORKOUT PLAN',pageW/2,82,{align:'center'});
+    doc.setDrawColor(...gold);doc.setLineWidth(0.5);doc.line(margin,92,pageW-margin,92);
+    doc.setFontSize(24);doc.setFont('helvetica','bold');doc.setTextColor(...wht);
+    doc.text(`${state.firstName.toUpperCase()}'S PLAN`,pageW/2,108,{align:'center'});
+    doc.setFontSize(10);doc.setFont('helvetica','normal');doc.setTextColor(...gry);
+    doc.text(`${levelLabels[state.level]}  ·  ${goalLabels[state.goal]}`,pageW/2,122,{align:'center'});
+    doc.text(`${equipLabels[state.equipment]}  ·  ${state.days} days/week`,pageW/2,132,{align:'center'});
+    doc.text(`Generated by GetFitAF  ·  getfitaf.fitness`,pageW/2,148,{align:'center'});
+
+    newPage();
+    const lines=state.workoutMarkdown.split('\n');
+    let inTable=false,tHeaders=[],tRows=[];
+    function flushTable(){
+      if(!tHeaders.length||!tRows.length){inTable=false;tHeaders=[];tRows=[];return;}
+      checkY(tRows.length*8+24);
+      doc.autoTable({
+        startY:y,head:[tHeaders],body:tRows,
+        margin:{left:margin,right:margin},
+        styles:{fontSize:8,cellPadding:3,fillColor:dkGray,textColor:wht,lineColor:dkBorder,lineWidth:0.3},
+        headStyles:{fillColor:[40,33,0],textColor:gold,fontStyle:'bold',fontSize:8},
+        alternateRowStyles:{fillColor:[20,20,20]},
+        theme:'grid'
+      });
+      y=doc.lastAutoTable.finalY+10;
+      inTable=false;tHeaders=[];tRows=[];
+    }
+
+    for(let i=0;i<lines.length;i++){
+      const line=lines[i];
+      const trimmed=line.trim();
+      if(!trimmed){if(inTable)flushTable();continue;}
+      if(trimmed.startsWith('|')){
+        if(/^\|[\s\-:]+\|/.test(trimmed))continue;
+        const cells=trimmed.split('|').slice(1,-1).map(c=>c.trim());
+        if(!inTable){tHeaders=cells;inTable=true;}
+        else tRows.push(cells);
+        continue;
+      }
+      if(inTable)flushTable();
+      if(trimmed.match(/^##\s/)){
+        checkY(18);
+        const txt=trimmed.replace(/^#+\s/,'').toUpperCase();
+        doc.setFillColor(...gold);doc.rect(margin,y-4,pageW-margin*2,12,'F');
+        doc.setFontSize(11);doc.setFont('helvetica','bold');doc.setTextColor(...blk);
+        doc.text(txt,margin+4,y+4);y+=18;continue;
+      }
+      if(trimmed.match(/^###\s/)){
+        checkY(14);
+        const txt=trimmed.replace(/^#+\s/,'');
+        doc.setFontSize(10);doc.setFont('helvetica','bold');doc.setTextColor(...gold);
+        doc.text(txt,margin,y);y+=9;continue;
+      }
+      checkY(8);
+      const cleaned=trimmed.replace(/\*\*(.+?)\*\*/g,'$1').replace(/^[-*]\s/,'• ');
+      doc.setFontSize(9);doc.setFont('helvetica','normal');doc.setTextColor(...wht);
+      const wrapped=doc.splitTextToSize(cleaned,pageW-margin*2);
+      wrapped.forEach(wl=>{checkY(7);doc.text(wl,margin,y);y+=6;});
+    }
+    if(inTable)flushTable();
+
+    doc.save(`GetFitAF_${state.firstName}_Workout_Plan.pdf`);
+    showToast('✅ PDF downloaded!','success');
+  }catch(e){
+    console.error(e);
+    showToast('PDF error — please try again.','error');
+  }
+}
+
+function openEmailModal(){
+  document.getElementById('modalEmail').value=state.email;
+  document.getElementById('emailModal').classList.add('active');
+}
+function closeEmailModal(){document.getElementById('emailModal').classList.remove('active');}
+
+async function sendEmail(){
+  const email=document.getElementById('modalEmail').value.trim();
+  if(!/\S+@\S+\.\S+/.test(email)){showToast('Please enter a valid email.','error');return;}
+  const btn=document.getElementById('sendEmailBtn');
+  btn.disabled=true;btn.textContent='Sending...';
+  // Placeholder — replace with your Vercel/Resend endpoint:
+  // const res = await fetch('/api/send-email', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({to:email,name:state.firstName,workout:state.workoutMarkdown}) });
+  await new Promise(r=>setTimeout(r,1200));
+  closeEmailModal();
+  showToast(`📧 Ready to send to ${email} — connect Resend to activate!`,'success');
+  btn.disabled=false;btn.textContent='Send It →';
+}
+
+function showToast(msg,type){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className=`toast ${type}`;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),4500);
+}
+
+loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',()=>{
+  loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js',()=>{});
+});
+</script>
+</body>
+</html>
