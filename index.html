@@ -536,16 +536,14 @@ Be specific. Use real exercise names. Include sets, reps, rest periods. Write di
     console.log("Fetch status:", res.status);
     if(!res.ok){
       const errBody=await res.text();
-      console.error("API error:", errBody);
       throw new Error("HTTP "+res.status+": "+errBody.slice(0,300));
     }
     const data=await res.json();
-    if(!data.text){
-      throw new Error("Bad response: "+JSON.stringify(data).slice(0,300));
-    }
+    if(!data.text) throw new Error("Bad response: "+JSON.stringify(data).slice(0,300));
     const markdown=data.text;
     state.workoutMarkdown=markdown;
     showResult(markdown);
+
   }catch(e){
     console.error("API call failed:", e.name, e.message);
     const errMsg=e.message||"Unknown error";
@@ -711,11 +709,19 @@ async function sendEmail(){
   if(!/\S+@\S+\.\S+/.test(email)){showToast('Please enter a valid email.','error');return;}
   const btn=document.getElementById('sendEmailBtn');
   btn.disabled=true;btn.textContent='Sending...';
-  // Placeholder — replace with your Vercel/Resend endpoint:
-  // const res = await fetch('/api/send-email', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({to:email,name:state.firstName,workout:state.workoutMarkdown}) });
-  await new Promise(r=>setTimeout(r,1200));
-  closeEmailModal();
-  showToast(`📧 Ready to send to ${email} — connect Resend to activate!`,'success');
+  try{
+    const res=await fetch('/api/send-email',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({to:email,name:state.firstName,workout:state.workoutMarkdown})
+    });
+    const data=await res.json();
+    if(!res.ok) throw new Error(data.error||'Failed to send');
+    closeEmailModal();
+    showToast('📧 Workout emailed to '+email+'!','success');
+  }catch(e){
+    showToast('Failed to send: '+e.message,'error');
+  }
   btn.disabled=false;btn.textContent='Send It →';
 }
 
