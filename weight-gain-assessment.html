@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GetFit AF – Could Your Eating Habits Be Causing Weight Gain? Let's See.... 🔍</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f4f6f4;
+      color: #2d2d2d;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #4a7c59;
+      color: white;
+      padding: 32px 24px 24px;
+      text-align: center;
+    }
+    header h1 { font-size: 1.8rem; letter-spacing: 1px; font-weight: 700; }
+    header p  { margin-top: 6px; font-size: 0.95rem; opacity: 0.88; }
+
+    .container {
+      max-width: 720px;
+      margin: 32px auto;
+      padding: 0 16px 60px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 28px 32px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      margin-bottom: 24px;
+    }
+
+    .card h2 {
+      font-size: 1.05rem;
+      color: #4a7c59;
+      margin-bottom: 18px;
+      font-weight: 600;
+      border-bottom: 2px solid #e8f0ea;
+      padding-bottom: 10px;
+    }
+
+    .field-group {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .field {
+      flex: 1;
+      min-width: 200px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field.full { flex: 100%; }
+
+    .field label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #555;
+    }
+
+    .field input,
+    .field select {
+      border: 1.5px solid #dde4dd;
+      border-radius: 8px;
+      padding: 10px 13px;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+      background: white;
+      color: #2d2d2d;
+    }
+
+    .field input:focus,
+    .field select:focus { border-color: #4a7c59; }
+
+    .instructions {
+      background: #eef5f0;
+      border-left: 4px solid #4a7c59;
+      padding: 14px 18px;
+      border-radius: 0 8px 8px 0;
+      font-size: 0.9rem;
+      color: #3a5c46;
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+
+    .question {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 13px 0;
+      border-bottom: 1px solid #f0f0f0;
+      gap: 16px;
+    }
+
+    .question:last-child { border-bottom: none; }
+
+    .q-text {
+      font-size: 0.93rem;
+      line-height: 1.45;
+      flex: 1;
+      color: #333;
+    }
+
+    .q-num {
+      font-size: 0.78rem;
+      color: #4a7c59;
+      font-weight: 700;
+      margin-right: 6px;
+    }
+
+    .toggle-group { display: flex; gap: 8px; flex-shrink: 0; }
+    .toggle-group input[type="radio"] { display: none; }
+
+    .toggle-btn {
+      display: inline-block;
+      padding: 7px 18px;
+      border-radius: 20px;
+      border: 1.5px solid #ccd9cc;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #666;
+      background: #fafafa;
+      transition: all 0.15s;
+      user-select: none;
+      cursor: pointer;
+    }
+
+    .toggle-group input[type="radio"]:checked + .toggle-btn.yes {
+      background: #c0392b; border-color: #c0392b; color: white;
+    }
+    .toggle-group input[type="radio"]:checked + .toggle-btn.no {
+      background: #4a7c59; border-color: #4a7c59; color: white;
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 15px;
+      background: #4a7c59;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.5px;
+      transition: background 0.2s;
+    }
+
+    .submit-btn:hover { background: #3a6347; }
+    .submit-btn:disabled { background: #9ab8a3; cursor: not-allowed; }
+
+    /* Results */
+    #results { display: none; }
+
+    .score-box {
+      text-align: center;
+      padding: 32px 20px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+    }
+    .score-box .score-num   { font-size: 4rem; font-weight: 800; line-height: 1; }
+    .score-box .score-label { font-size: 1rem; margin-top: 4px; opacity: 0.8; }
+    .score-box .score-band  { font-size: 1.3rem; font-weight: 700; margin-top: 12px; }
+
+    .band-0  { background: #d5f0dc; color: #1e6e36; }
+    .band-3  { background: #e8f5e9; color: #3a6347; }
+    .band-5  { background: #fff3cd; color: #856404; }
+    .band-10 { background: #ffe0b2; color: #8c4400; }
+    .band-15 { background: #fdd9d7; color: #8b1a1a; }
+
+    .sent-notice {
+      background: #eef5f0;
+      border: 1.5px solid #4a7c59;
+      border-radius: 10px;
+      padding: 14px 18px;
+      font-size: 0.9rem;
+      color: #3a5c46;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .recommendation {
+      background: #f8f9f8;
+      border-radius: 10px;
+      padding: 20px 24px;
+      font-size: 0.93rem;
+      line-height: 1.65;
+      color: #333;
+      margin-bottom: 24px;
+    }
+
+    .answers-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .answer-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 0.82rem;
+      line-height: 1.35;
+      color: #444;
+    }
+
+    .answer-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 3px;
+    }
+    .dot-yes { background: #c0392b; }
+    .dot-no  { background: #4a7c59; }
+
+    /* 10 Weight Loss Rules */
+    .rules-section ol { padding-left: 20px; }
+    .rules-section li {
+      padding: 7px 0;
+      font-size: 0.92rem;
+      line-height: 1.5;
+      border-bottom: 1px solid #f0f0f0;
+      color: #333;
+    }
+    .rules-section li:last-child { border-bottom: none; }
+
+    /* CRAP foods */
+    .crap-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .crap-item {
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+
+    .crap-letter {
+      font-size: 1.8rem;
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+
+    .crap-title {
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .crap-desc {
+      font-size: 0.8rem;
+      line-height: 1.45;
+    }
+
+    .crap-c { background: #fdd9d7; color: #7a1a1a; }
+    .crap-r { background: #ffe0b2; color: #6b3300; }
+    .crap-a { background: #fff3cd; color: #5a4000; }
+    .crap-p { background: #e8f5e9; color: #1e4d2b; }
+
+    .btn-print {
+      width: 100%;
+      padding: 13px;
+      background: white;
+      color: #4a7c59;
+      border: 2px solid #4a7c59;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-print:hover { background: #eef5f0; }
+
+    .btn-restart {
+      width: 100%;
+      padding: 12px;
+      background: transparent;
+      color: #888;
+      border: 1.5px solid #ddd;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      margin-top: 12px;
+      transition: all 0.2s;
+    }
+    .btn-restart:hover { border-color: #4a7c59; color: #4a7c59; }
+
+    .error-msg {
+      background: #fdd9d7;
+      color: #8b1a1a;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 0.9rem;
+      margin-top: 12px;
+      display: none;
+    }
+
+    @media print {
+      body { background: white; }
+      .card { box-shadow: none; border: 1px solid #ddd; }
+      .btn-print, .btn-restart { display: none; }
+      #form-section { display: none; }
+      #results { display: block !important; }
+    }
+
+    @media (max-width: 520px) {
+      .card { padding: 20px 16px; }
+      .answers-grid { grid-template-columns: 1fr; }
+      .crap-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>GetFit AF</h1>
+  <p>Could Your Eating Habits Be Causing Weight Gain? Let's See.... 🔍</p>
+</header>
+
+<div class="container">
+
+  <!-- FORM -->
+  <div id="form-section">
+    <div class="card">
+      <h2>Your Details</h2>
+      <div class="field-group">
+        <div class="field">
+          <label for="client-name">Full Name *</label>
+          <input type="text" id="client-name" placeholder="e.g. Priya Sharma" />
+        </div>
+        <div class="field">
+          <label for="client-email">Email Address *</label>
+          <input type="email" id="client-email" placeholder="e.g. priya@email.com" />
+        </div>
+        <div class="field full">
+          <label for="coach-select">Your GetFit AF Coach *</label>
+          <select id="coach-select">
+            <option value="">— Select your coach —</option>
+            <option value="Kangna Saini">Kangna Saini</option>
+            <option value="Janavi">Janavi</option>
+            <option value="Rishita">Rishita</option>
+            <option value="Naresh">Naresh</option>
+            <option value="Anmol">Anmol</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="instructions">
+      Answer each question honestly — there are no right or wrong answers. For each statement, select <strong>Yes</strong> if it applies to you regularly, or <strong>No</strong> if it does not. Your results will be shared with your coach to help personalise your fat-loss plan.
+    </div>
+
+    <div class="card">
+      <h2>Eating Habits Questionnaire</h2>
+      <div id="questions-list"></div>
+    </div>
+
+    <div class="card" style="padding-top: 20px; padding-bottom: 20px;">
+      <button class="submit-btn" id="submit-btn" onclick="submitForm()">Calculate My Score &#8594;</button>
+      <div class="error-msg" id="error-msg">Please fill in your name, email, coach, and answer all 20 questions before submitting.</div>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results">
+    <div class="card">
+      <h2>Your Assessment Results</h2>
+      <div id="score-display" class="score-box">
+        <div class="score-num" id="score-num">0</div>
+        <div class="score-label">out of 20</div>
+        <div class="score-band" id="score-band"></div>
+      </div>
+      <div class="sent-notice" id="sent-notice"></div>
+      <div class="recommendation" id="recommendation"></div>
+    </div>
+
+    <div class="card">
+      <h2>Your Answers at a Glance</h2>
+      <div class="answers-grid" id="answers-grid"></div>
+    </div>
+
+    <div class="card rules-section">
+      <h2>The 10 Weight Loss Rules</h2>
+      <p style="font-size:0.88rem; color:#666; margin-bottom:14px;">Follow these principles to take control of your body fat and insulin levels. Focus first on the rules that connect to your Yes answers above.</p>
+      <ol>
+        <li>Reduce your intake of refined carbohydrates — white bread, white rice, pasta, and processed grain products raise insulin more than whole-food alternatives.</li>
+        <li>Cut out sugar-sweetened drinks — sodas, fruit juices, energy drinks, and flavoured coffees add calories without satisfying hunger.</li>
+        <li>Include a source of protein at every meal — protein reduces hunger, preserves muscle, and keeps insulin levels stable between meals.</li>
+        <li>Fill at least half your plate with vegetables — fibre from vegetables slows digestion, reduces insulin spikes, and keeps you full for longer.</li>
+        <li>Avoid eating after 8pm — late-night eating raises insulin overnight and disrupts the body's natural fat-burning cycle during sleep.</li>
+        <li>Eat slowly and stop when you feel about 80% full — eating too quickly leads to overconsumption before fullness signals reach your brain.</li>
+        <li>Choose natural fats over low-fat processed products — avocado, olive oil, eggs, and nuts slow digestion and provide lasting energy without spiking insulin.</li>
+        <li>Keep alcohol to one standard drink or fewer per day — alcohol temporarily shuts down fat burning until it is fully processed by the liver.</li>
+        <li>Move your body for at least 20–30 minutes every day — even a brisk walk significantly improves insulin sensitivity and supports fat loss.</li>
+        <li>Prioritise 7–8 hours of sleep per night — poor sleep raises cortisol, which increases hunger and drives fat storage, especially around the belly.</li>
+      </ol>
+    </div>
+
+    <div class="card">
+      <h2>Avoid C.R.A.P. Foods</h2>
+      <p style="font-size:0.88rem; color:#666; margin-bottom:4px;">These four food categories are the biggest drivers of weight gain, insulin resistance, and poor health outcomes. Reducing them is one of the single most effective things you can do.</p>
+      <div class="crap-grid">
+        <div class="crap-item crap-c">
+          <div class="crap-letter">C</div>
+          <div class="crap-title">Carbonated &amp; Caffeinated Drinks</div>
+          <div class="crap-desc">Sodas, energy drinks, diet soft drinks, and sugar-laden coffee drinks.</div>
+        </div>
+        <div class="crap-item crap-r">
+          <div class="crap-letter">R</div>
+          <div class="crap-title">Refined Sugars &amp; Carbohydrates</div>
+          <div class="crap-desc">White bread, pastries, sweets, sugary cereals, and packaged baked goods.</div>
+        </div>
+        <div class="crap-item crap-a">
+          <div class="crap-letter">A</div>
+          <div class="crap-title">Artificial Additives</div>
+          <div class="crap-desc">Artificial colours, preservatives, flavour enhancers, and sweeteners found in packaged foods.</div>
+        </div>
+        <div class="crap-item crap-p">
+          <div class="crap-letter">P</div>
+          <div class="crap-title">Processed Foods</div>
+          <div class="crap-desc">Fast food, ready meals, packaged snacks, processed meats, and anything with a long ingredient list.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <button class="btn-print" onclick="window.print()">&#128424; Print / Save as PDF</button>
+      <button class="btn-restart" onclick="restartForm()">&#8617; Start Over</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxstrC36HiFAPQCnMjj-zQs8ZdtZ1mcbL8FiOgtuyyE0qRwSTxWj0bUNK_N4Qy5GEU/exec';
+
+  const questions = [
+    "Do you eat refined carbohydrates — such as white bread, white rice, pasta, or pastries — on most days?",
+    "Do you drink sugar-sweetened beverages, such as sodas, energy drinks, or fruit juices, more than once a week?",
+    "Do you regularly snack between meals, even when you are not particularly hungry?",
+    "Do you typically eat large portions — noticeably more than others around you or larger than a fist-sized serving?",
+    "Do you tend to eat quickly, usually finishing your meal in under 10 minutes?",
+    "Do you regularly eat meals or snacks after 8pm?",
+    "Do you eat processed or fast food more than twice a week?",
+    "Do you regularly consume foods with added sugar, including flavoured sauces, condiments, or sweetened yogurts?",
+    "Do you drink fewer than 6 glasses of water per day?",
+    "Do you eat fewer than 3 servings of vegetables on most days?",
+    "Do you regularly choose low-fat or diet versions of foods — such as diet yoghurt, low-fat biscuits, or fat-free dressings?",
+    "Do you get fewer than 7 hours of sleep on most nights?",
+    "Do you sit for more than 8 hours a day, with little to no structured physical activity?",
+    "Do you feel hungry again within 2 hours of finishing a full meal?",
+    "Do you experience strong cravings for sweet or starchy foods, particularly in the afternoon or evening?",
+    "Do you find that you gain weight relatively easily, even when you feel you are not eating a lot?",
+    "Do you drink more than one standard alcoholic drink per day?",
+    "Do you rarely include a dedicated source of protein — such as eggs, chicken, fish, legumes, or Greek yoghurt — in your meals?",
+    "Do you eat fried foods, or foods cooked in large amounts of oil or butter, more than twice a week?",
+    "Do you often eat in response to stress, boredom, or other emotions rather than genuine physical hunger?"
+  ];
+
+  const bands = [
+    {
+      min: 0, max: 2,
+      label: "Safe Zone &#10003;",
+      cls: "band-0",
+      range: "0–2",
+      text: "Your eating and lifestyle habits show a low probability of weight gain. You're already doing the right things. Keep following The 10 Weight Loss Rules and stay consistent — your habits are your strongest asset."
+    },
+    {
+      min: 3, max: 4,
+      label: "Minor Risk &#128308;",
+      cls: "band-3",
+      range: "3–4",
+      text: "Your habits are mostly sound, but a few patterns could tip the balance over time. Pick one or two of your Yes answers to work on this month. Small, targeted changes now will prevent these from becoming bigger problems later."
+    },
+    {
+      min: 5, max: 9,
+      label: "Medium Risk &#128992;",
+      cls: "band-5",
+      range: "5–9",
+      text: "Several of your current habits are contributing to a meaningful risk of weight gain. Rather than changing everything at once, identify the two or three Yes answers that feel most manageable and tackle those first. Aim to bring your score below 5 within three months. Your coach will help you build a realistic plan."
+    },
+    {
+      min: 10, max: 14,
+      label: "High Risk &#128308;",
+      cls: "band-10",
+      range: "10–14",
+      text: "Your current habits significantly increase your probability of weight gain and fat accumulation. The good news is that targeted changes work fast — reducing refined carbohydrates, cutting sugar-sweetened drinks, and improving sleep alone can make a noticeable difference within weeks. Work through The 10 Weight Loss Rules with your coach and aim to reduce your score to under 10 within six months."
+    },
+    {
+      min: 15, max: 20,
+      label: "Danger Zone &#9888;",
+      cls: "band-15",
+      range: "15–20",
+      text: "Your current lifestyle poses a high risk of ongoing weight gain and potential long-term health consequences. This is a wake-up call — but also an opportunity. With the right support and gradual, consistent changes, significant improvement is absolutely possible. Your coach has been notified and will prioritise this in your next session. Start with The 10 Weight Loss Rules and cut out C.R.A.P. foods. You don't have to fix everything at once, but you do need to start now."
+    }
+  ];
+
+  // Render questions
+  const list = document.getElementById('questions-list');
+  questions.forEach((q, i) => {
+    list.innerHTML += `
+      <div class="question">
+        <div class="q-text"><span class="q-num">${i+1}.</span>${q}</div>
+        <div class="toggle-group">
+          <label>
+            <input type="radio" name="q${i}" value="Yes" />
+            <span class="toggle-btn yes">Yes</span>
+          </label>
+          <label>
+            <input type="radio" name="q${i}" value="No" />
+            <span class="toggle-btn no">No</span>
+          </label>
+        </div>
+      </div>`;
+  });
+
+  function submitForm() {
+    const name   = document.getElementById('client-name').value.trim();
+    const email  = document.getElementById('client-email').value.trim();
+    const coach  = document.getElementById('coach-select').value;
+    const errEl  = document.getElementById('error-msg');
+
+    const answers = questions.map((_, i) => {
+      const val = document.querySelector(`input[name="q${i}"]:checked`);
+      return val ? val.value : null;
+    });
+
+    if (!name || !email || !coach || answers.includes(null)) {
+      errEl.style.display = 'block';
+      return;
+    }
+    errEl.style.display = 'none';
+
+    // Score & band
+    const score = answers.filter(a => a === 'Yes').length;
+    const band  = bands.find(b => score >= b.min && score <= b.max);
+
+    // Yes questions list
+    const yesQuestions = answers
+      .map((a, i) => a === 'Yes' ? `${i+1}. ${questions[i]}` : null)
+      .filter(Boolean);
+
+    // Payload to Apps Script
+    const payload = {
+      formType: 'weightgain',
+      name, email, coach, score,
+      bandLabel:      band.label,
+      bandRange:      band.range,
+      recommendation: band.text,
+      answers,
+      yesQuestions
+    };
+
+    // Send to Apps Script (fire-and-forget, no-cors)
+    fetch(APPS_SCRIPT_URL, {
+      method:  'POST',
+      mode:    'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body:    JSON.stringify(payload)
+    }).catch(() => {/* silent fail */});
+
+    // ── Show results ──────────────────────────────────────────────
+    document.getElementById('score-num').textContent  = score;
+    document.getElementById('score-band').innerHTML   = band.label;
+    const scoreBox = document.getElementById('score-display');
+    scoreBox.className = 'score-box ' + band.cls;
+    document.getElementById('recommendation').innerHTML = band.text;
+
+    document.getElementById('sent-notice').innerHTML =
+      `&#10003; Your results have been sent to your coach <strong>${coach}</strong>. They'll review this before your next session.`;
+
+    // Answers grid
+    const grid = document.getElementById('answers-grid');
+    grid.innerHTML = answers.map((a, i) => `
+      <div class="answer-item">
+        <div class="answer-dot ${a === 'Yes' ? 'dot-yes' : 'dot-no'}"></div>
+        <div><strong>${i+1}.</strong> ${questions[i].replace(/\?$/, '')} &#8212; <strong>${a}</strong></div>
+      </div>`).join('');
+
+    document.getElementById('form-section').style.display = 'none';
+    document.getElementById('results').style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function restartForm() {
+    document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
+    document.getElementById('client-name').value  = '';
+    document.getElementById('client-email').value = '';
+    document.getElementById('coach-select').value = '';
+    document.getElementById('form-section').style.display = 'block';
+    document.getElementById('results').style.display = 'none';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+</script>
+
+</body>
+</html>

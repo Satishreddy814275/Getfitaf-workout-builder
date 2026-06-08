@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GetFit AF – Nutrition Assessment</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f4f6f4;
+      color: #2d2d2d;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #4a7c59;
+      color: white;
+      padding: 32px 24px 24px;
+      text-align: center;
+    }
+    header h1 { font-size: 1.8rem; letter-spacing: 1px; font-weight: 700; }
+    header p  { margin-top: 6px; font-size: 0.95rem; opacity: 0.88; }
+
+    .container {
+      max-width: 720px;
+      margin: 32px auto;
+      padding: 0 16px 60px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 28px 32px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      margin-bottom: 24px;
+    }
+
+    .card h2 {
+      font-size: 1.05rem;
+      color: #4a7c59;
+      margin-bottom: 18px;
+      font-weight: 600;
+      border-bottom: 2px solid #e8f0ea;
+      padding-bottom: 10px;
+    }
+
+    .field-group {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .field {
+      flex: 1;
+      min-width: 200px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field.full { flex: 100%; }
+
+    .field label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #555;
+    }
+
+    .field input,
+    .field select {
+      border: 1.5px solid #dde4dd;
+      border-radius: 8px;
+      padding: 10px 13px;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+      background: white;
+      color: #2d2d2d;
+    }
+
+    .field input:focus,
+    .field select:focus { border-color: #4a7c59; }
+
+    .instructions {
+      background: #eef5f0;
+      border-left: 4px solid #4a7c59;
+      padding: 14px 18px;
+      border-radius: 0 8px 8px 0;
+      font-size: 0.9rem;
+      color: #3a5c46;
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+
+    .question {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 13px 0;
+      border-bottom: 1px solid #f0f0f0;
+      gap: 16px;
+    }
+
+    .question:last-child { border-bottom: none; }
+
+    .q-text {
+      font-size: 0.93rem;
+      line-height: 1.45;
+      flex: 1;
+      color: #333;
+    }
+
+    .q-num {
+      font-size: 0.78rem;
+      color: #4a7c59;
+      font-weight: 700;
+      margin-right: 6px;
+    }
+
+    .toggle-group { display: flex; gap: 8px; flex-shrink: 0; }
+    .toggle-group input[type="radio"] { display: none; }
+
+    .toggle-btn {
+      display: inline-block;
+      padding: 7px 18px;
+      border-radius: 20px;
+      border: 1.5px solid #ccd9cc;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #666;
+      background: #fafafa;
+      transition: all 0.15s;
+      user-select: none;
+      cursor: pointer;
+    }
+
+    .toggle-group input[type="radio"]:checked + .toggle-btn.yes {
+      background: #c0392b; border-color: #c0392b; color: white;
+    }
+    .toggle-group input[type="radio"]:checked + .toggle-btn.no {
+      background: #4a7c59; border-color: #4a7c59; color: white;
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 15px;
+      background: #4a7c59;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.5px;
+      transition: background 0.2s;
+    }
+
+    .submit-btn:hover { background: #3a6347; }
+    .submit-btn:disabled { background: #9ab8a3; cursor: not-allowed; }
+
+    /* Results */
+    #results { display: none; }
+
+    .score-box {
+      text-align: center;
+      padding: 32px 20px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+    }
+    .score-box .score-num  { font-size: 4rem; font-weight: 800; line-height: 1; }
+    .score-box .score-label { font-size: 1rem; margin-top: 4px; opacity: 0.8; }
+    .score-box .score-band  { font-size: 1.3rem; font-weight: 700; margin-top: 12px; }
+
+    .band-0  { background: #d5f0dc; color: #1e6e36; }
+    .band-5  { background: #fff3cd; color: #856404; }
+    .band-10 { background: #ffe0b2; color: #8c4400; }
+    .band-15 { background: #fdd9d7; color: #8b1a1a; }
+
+    .sent-notice {
+      background: #eef5f0;
+      border: 1.5px solid #4a7c59;
+      border-radius: 10px;
+      padding: 14px 18px;
+      font-size: 0.9rem;
+      color: #3a5c46;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .recommendation {
+      background: #f8f9f8;
+      border-radius: 10px;
+      padding: 20px 24px;
+      font-size: 0.93rem;
+      line-height: 1.65;
+      color: #333;
+      margin-bottom: 24px;
+    }
+
+    .answers-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .answer-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 0.82rem;
+      line-height: 1.35;
+      color: #444;
+    }
+
+    .answer-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 3px;
+    }
+    .dot-yes { background: #c0392b; }
+    .dot-no  { background: #4a7c59; }
+
+    .golden-rules ol { padding-left: 20px; }
+    .golden-rules li {
+      padding: 7px 0;
+      font-size: 0.92rem;
+      line-height: 1.5;
+      border-bottom: 1px solid #f0f0f0;
+      color: #333;
+    }
+    .golden-rules li:last-child { border-bottom: none; }
+
+    .btn-print {
+      width: 100%;
+      padding: 13px;
+      background: white;
+      color: #4a7c59;
+      border: 2px solid #4a7c59;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-print:hover { background: #eef5f0; }
+
+    .btn-restart {
+      width: 100%;
+      padding: 12px;
+      background: transparent;
+      color: #888;
+      border: 1.5px solid #ddd;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      margin-top: 12px;
+      transition: all 0.2s;
+    }
+    .btn-restart:hover { border-color: #4a7c59; color: #4a7c59; }
+
+    .error-msg {
+      background: #fdd9d7;
+      color: #8b1a1a;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 0.9rem;
+      margin-top: 12px;
+      display: none;
+    }
+
+    @media print {
+      body { background: white; }
+      .card { box-shadow: none; border: 1px solid #ddd; }
+      .btn-print, .btn-restart { display: none; }
+      #form-section { display: none; }
+      #results { display: block !important; }
+    }
+
+    @media (max-width: 520px) {
+      .card { padding: 20px 16px; }
+      .answers-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>GetFit AF</h1>
+  <p>Client Nutrition Assessment</p>
+</header>
+
+<div class="container">
+
+  <!-- FORM -->
+  <div id="form-section">
+    <div class="card">
+      <h2>Your Details</h2>
+      <div class="field-group">
+        <div class="field">
+          <label for="client-name">Full Name *</label>
+          <input type="text" id="client-name" placeholder="e.g. Priya Sharma" />
+        </div>
+        <div class="field">
+          <label for="client-email">Email Address *</label>
+          <input type="email" id="client-email" placeholder="e.g. priya@email.com" />
+        </div>
+        <div class="field full">
+          <label for="coach-select">Your GetFit AF Coach *</label>
+          <select id="coach-select">
+            <option value="">— Select your coach —</option>
+            <option value="Kangna Saini">Kangna Saini</option>
+            <option value="Janavi">Janavi</option>
+            <option value="Rishita">Rishita</option>
+            <option value="Naresh">Naresh</option>
+            <option value="Anmol">Anmol</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="instructions">
+      Answer each question honestly — there are no right or wrong answers. For each habit described, select <strong>Yes</strong> if it applies to you or <strong>No</strong> if it doesn't. Your results will be shared with your coach so we can personalise your nutrition plan.
+    </div>
+
+    <div class="card">
+      <h2>Nutrition Habits Questionnaire</h2>
+      <div id="questions-list"></div>
+    </div>
+
+    <div class="card" style="padding-top: 20px; padding-bottom: 20px;">
+      <button class="submit-btn" id="submit-btn" onclick="submitForm()">Calculate My Score →</button>
+      <div class="error-msg" id="error-msg">Please fill in your name, email, coach, and answer all 20 questions before submitting.</div>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results">
+    <div class="card">
+      <h2>Your Assessment Results</h2>
+      <div id="score-display" class="score-box">
+        <div class="score-num" id="score-num">0</div>
+        <div class="score-label">out of 20</div>
+        <div class="score-band" id="score-band"></div>
+      </div>
+      <div class="sent-notice" id="sent-notice"></div>
+      <div class="recommendation" id="recommendation"></div>
+    </div>
+
+    <div class="card">
+      <h2>Your Answers at a Glance</h2>
+      <div class="answers-grid" id="answers-grid"></div>
+    </div>
+
+    <div class="card golden-rules">
+      <h2>11 Golden Rules for a Healthy Diet</h2>
+      <p style="font-size:0.88rem; color:#666; margin-bottom:14px;">Your starting point for better nutrition. Focus first on the rules most relevant to your Yes answers above.</p>
+      <ol>
+        <li>Limit your intake of sugar, sweets, cakes, desserts, and pastries.</li>
+        <li>Cut down on refined carbohydrates such as white bread and biscuits.</li>
+        <li>Eat more beans, lentils, and whole grains — oats, brown rice, quinoa, rye, millet, or whole wheat.</li>
+        <li>Include more dark leafy and root vegetables — broccoli, spinach, peppers, carrots, sweet potatoes, and green beans.</li>
+        <li>Eat at least 3 portions of fresh fruit per day — apples, bananas, berries, melon, or citrus fruits.</li>
+        <li>Drink a minimum of 8 glasses of sugar-free fluids daily — water, herbal teas, zero-calorie flavoured water, or fruit teas.</li>
+        <li>Take a high-quality multivitamin and mineral supplement, 1,000mg of Vitamin C, and Omega 3 &amp; 6 fatty acids every day.</li>
+        <li>Avoid fried, burnt, or overly browned food, hydrogenated fats, and excess animal fat.</li>
+        <li>Reduce your intake of processed meats and foods containing artificial additives, colours, and flavours.</li>
+        <li>Avoid caffeine from coffee, tea, or energy drinks after 4pm.</li>
+        <li>Avoid smoking and keep alcohol to one standard drink per day or less.</li>
+      </ol>
+    </div>
+
+    <div class="card">
+      <button class="btn-print" onclick="window.print()">🖨 Print / Save as PDF</button>
+      <button class="btn-restart" onclick="restartForm()">↩ Start Over</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ─── REPLACE THIS with your deployed Apps Script URL ───────────────────────
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxstrC36HiFAPQCnMjj-zQs8ZdtZ1mcbL8FiOgtuyyE0qRwSTxWj0bUNK_N4Qy5GEU/exec';
+  // ───────────────────────────────────────────────────────────────────────────
+
+  const questions = [
+    "Do you add sugar to your food or drinks on most days?",
+    "Do you regularly consume foods and drinks with added sugars?",
+    "Do you use large amounts of salt in your meals?",
+    "Do you drink more than one cup of coffee on most days?",
+    "Do you consume caffeinated drinks after 4pm?",
+    "Do you smoke more than five cigarettes a day?",
+    "Do you use recreational drugs?",
+    "Do you drink more than one standard alcoholic drink per day (e.g. one glass of wine, one pint of beer, or one measure of spirits)?",
+    "Do you eat fried food more than twice a week?",
+    "Do you eat processed or fast food more than twice a week?",
+    "Do you eat processed meats (such as sausages, ham, or deli meats) more than twice a week?",
+    "Do you regularly eat foods that contain additives and preservatives?",
+    "Do you eat chocolate, pastries, or sweets more than twice a week?",
+    "Do fruits and vegetables make up less than one-third of your daily diet?",
+    "Do you drink less than 300ml (half a pint) of plain water per day?",
+    "Do you typically eat white rice, white flour, or white bread instead of whole grain options?",
+    "Do you consume less than 600ml (about one pint) of milk or yogurt per week?",
+    "Do you eat more than four slices of bread on a typical day?",
+    "Are there certain foods you feel you cannot go without, or feel addicted to?",
+    "Do you eat oily fish less than twice a week, and/or eat seeds less than once daily?"
+  ];
+
+  const bands = [
+    {
+      min: 0, max: 4,
+      label: "Health-Conscious ✅",
+      cls: "band-0",
+      range: "0–4",
+      text: "You are a health-conscious individual and your minor indiscretions are unlikely to significantly impact your health. With the right vitamin and mineral supplementation alongside your already good habits, you're on track for a long, healthy life. Keep it up!"
+    },
+    {
+      min: 5, max: 9,
+      label: "On the Right Track 🟡",
+      cls: "band-5",
+      range: "5–9",
+      text: "You're heading in the right direction, but there's room to tighten things up. Rather than overhauling everything at once, pick two or three habits from your Yes answers and work on changing them for one month. Most cravings are short-term withdrawal symptoms. Aim to bring your score below 5 within three months."
+    },
+    {
+      min: 10, max: 14,
+      label: "Needs Improvement 🟠",
+      cls: "band-10",
+      range: "10–14",
+      text: "Your current diet needs some attention, but don't be discouraged — small, consistent changes add up fast. Start by following the 11 Golden Rules and tackle one habit at a time. Your coach will help you set realistic goals. Aim to bring your score down to 5 within six months. Remember: sugar, coffee, pastries, sweets, chocolate, and alcohol are all addictive — your cravings will reduce significantly after one month without them."
+    },
+    {
+      min: 15, max: 20,
+      label: "Urgent Action Needed 🔴",
+      cls: "band-15",
+      range: "15–20",
+      text: "Your current diet is significantly impacting your health and energy levels. Continuing this way long-term is not sustainable — but your coach is here to help you make gradual, permanent changes. You don't have to fix everything at once. Start with two Yes answers this month and work to flip them to No. Follow the Golden Rules as your foundation. You may feel rough for the first two weeks, but within a month you'll start feeling a real difference."
+    }
+  ];
+
+  // Render questions
+  const list = document.getElementById('questions-list');
+  questions.forEach((q, i) => {
+    list.innerHTML += `
+      <div class="question">
+        <div class="q-text"><span class="q-num">${i+1}.</span>${q}</div>
+        <div class="toggle-group">
+          <label>
+            <input type="radio" name="q${i}" value="Yes" />
+            <span class="toggle-btn yes">Yes</span>
+          </label>
+          <label>
+            <input type="radio" name="q${i}" value="No" />
+            <span class="toggle-btn no">No</span>
+          </label>
+        </div>
+      </div>`;
+  });
+
+  function submitForm() {
+    const name   = document.getElementById('client-name').value.trim();
+    const email  = document.getElementById('client-email').value.trim();
+    const coach  = document.getElementById('coach-select').value;
+    const errEl  = document.getElementById('error-msg');
+
+    const answers = questions.map((_, i) => {
+      const val = document.querySelector(`input[name="q${i}"]:checked`);
+      return val ? val.value : null;
+    });
+
+    if (!name || !email || !coach || answers.includes(null)) {
+      errEl.style.display = 'block';
+      return;
+    }
+    errEl.style.display = 'none';
+
+    // Score & band
+    const score = answers.filter(a => a === 'Yes').length;
+    const band  = bands.find(b => score >= b.min && score <= b.max);
+
+    // Yes questions list
+    const yesQuestions = answers
+      .map((a, i) => a === 'Yes' ? `${i+1}. ${questions[i]}` : null)
+      .filter(Boolean);
+
+    // Payload to Apps Script
+    const payload = {
+      name, email, coach, score,
+      bandLabel:      band.label,
+      bandRange:      band.range,
+      recommendation: band.text,
+      answers,
+      yesQuestions
+    };
+
+    // Send to Apps Script (fire-and-forget, no-cors)
+    if (APPS_SCRIPT_URL !== 'YOUR_APPS_SCRIPT_URL_HERE') {
+      fetch(APPS_SCRIPT_URL, {
+        method:  'POST',
+        mode:    'no-cors',
+        headers: { 'Content-Type': 'text/plain' },
+        body:    JSON.stringify(payload)
+      }).catch(() => {/* silent fail */});
+    }
+
+    // ── Show results ──────────────────────────────────────────────
+    document.getElementById('score-num').textContent  = score;
+    document.getElementById('score-band').textContent = band.label;
+    const scoreBox = document.getElementById('score-display');
+    scoreBox.className = 'score-box ' + band.cls;
+    document.getElementById('recommendation').textContent = band.text;
+
+    document.getElementById('sent-notice').innerHTML =
+      `✅ Your results have been sent to your coach <strong>${coach}</strong>. They'll review this before your next session.`;
+
+    // Answers grid
+    const grid = document.getElementById('answers-grid');
+    grid.innerHTML = answers.map((a, i) => `
+      <div class="answer-item">
+        <div class="answer-dot ${a === 'Yes' ? 'dot-yes' : 'dot-no'}"></div>
+        <div><strong>${i+1}.</strong> ${questions[i].replace(/\?$/, '')} — <strong>${a}</strong></div>
+      </div>`).join('');
+
+    document.getElementById('form-section').style.display = 'none';
+    document.getElementById('results').style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function restartForm() {
+    document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
+    document.getElementById('client-name').value  = '';
+    document.getElementById('client-email').value = '';
+    document.getElementById('coach-select').value = '';
+    document.getElementById('form-section').style.display = 'block';
+    document.getElementById('results').style.display = 'none';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+</script>
+
+</body>
+</html>
