@@ -336,6 +336,13 @@ textarea.field-input{resize:vertical;min-height:80px;}
       Email My Plan
     </button>
   </div>
+  <div id="regenWrap" style="text-align:center;margin-top:4px">
+    <button class="btn-action" id="regenBtn" onclick="openRegenModal()" style="border:1px solid var(--gold);color:var(--gold);background:transparent">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+      <span id="regenBtnLabel">Not quite right? Regenerate</span>
+    </button>
+    <p class="char-count" id="regenCountLabel" style="text-align:center;margin-top:8px"></p>
+  </div>
   <button class="btn-restart" onclick="goHome()">↩ Build Another Workout</button>
 </div>
 
@@ -355,10 +362,28 @@ textarea.field-input{resize:vertical;min-height:80px;}
   </div>
 </div>
 
+<!-- REGENERATE MODAL -->
+<div class="modal-overlay" id="regenModal">
+  <div class="modal">
+    <h3>🔄 Regenerate Your Plan</h3>
+    <p>Tell us what to change and we'll rebuild your plan around it — e.g. "this feels too generic, can I get more variety" or "swap the HIIT day for more strength work."</p>
+    <div class="field-group">
+      <label class="field-label">What should change?</label>
+      <textarea class="field-input" id="regenFeedback" placeholder="Tell us what you'd like different..." rows="3" oninput="updateCharCount(this,'regenFeedbackCount',300)"></textarea>
+      <div class="char-count" id="regenFeedbackCount">0 / 300</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-modal-cancel" onclick="closeRegenModal()">Cancel</button>
+      <button class="btn-modal-send" id="submitRegenBtn" onclick="submitRegeneration()">Regenerate →</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
-const state={firstName:'',email:'',gender:'',level:'',goal:'',equipment:'',days:null,cardio:'',injuries:'',notes:'',workoutMarkdown:''};
+const state={firstName:'',email:'',gender:'',level:'',goal:'',equipment:'',days:null,cardio:'',injuries:'',notes:'',workoutMarkdown:'',intakeId:null,generationNumber:1};
+const MAX_GENERATIONS=4; // 1 original + up to 3 regenerations
 const levelLabels={'absolute-beginner':'Absolute Beginner','beginner':'Beginner','intermediate':'Intermediate','athlete':'Athlete'};
 const goalLabels={'fat-loss':'Fat Loss','muscle-gain':'Muscle Gain','general-fitness':'General Fitness','rehab':'Rehab / Recovery'};
 const equipLabels={'bodyweight':'No Equipment (Bodyweight)','home':'Home Gym (Bands/Dumbbells)','full-gym':'Full Gym Access'};
@@ -368,7 +393,7 @@ function startForm(){document.getElementById('heroScreen').style.display='none';
 function goHome(){
   document.getElementById('heroScreen').style.display='flex';
   ['formScreen','generatingScreen','resultScreen'].forEach(id=>{const el=document.getElementById(id);el.classList.remove('active');if(el.style)el.style.display='';});
-  Object.assign(state,{firstName:'',email:'',gender:'',level:'',goal:'',equipment:'',days:null,cardio:'',injuries:'',notes:'',workoutMarkdown:''});
+  Object.assign(state,{firstName:'',email:'',gender:'',level:'',goal:'',equipment:'',days:null,cardio:'',injuries:'',notes:'',workoutMarkdown:'',intakeId:null,generationNumber:1});
   document.querySelectorAll('.option-card').forEach(c=>c.classList.remove('selected'));
   document.querySelectorAll('.toggle-row').forEach(r=>r.classList.remove('selected'));
   document.querySelectorAll('.day-btn').forEach(b=>b.classList.remove('selected'));
@@ -417,13 +442,8 @@ function updateCharCount(el,cid,max){
   document.getElementById(cid).textContent=`${el.value.length} / ${max}`;
 }
 
-async function generateWorkout(){
-  state.injuries=document.getElementById('injuries').value.trim();
-  state.notes=document.getElementById('notes').value.trim();
-  document.getElementById('formScreen').classList.remove('active');
-  document.getElementById('generatingScreen').classList.add('active');
-
-  const prompt=`You are a professional personal trainer at GetFitAF. Build a complete personalised workout plan using the following methodology.
+function buildPrompt(feedbackSection){
+  return `You are a professional personal trainer at GetFitAF. Build a complete personalised workout plan using the following methodology.
 
 GETFITAF METHODOLOGY:
 
@@ -522,13 +542,24 @@ Table: Stretch | Duration
 ## KEY COACHING NOTES FOR ${state.firstName.toUpperCase()}
 5 personalised bullet points based on their specific profile, level, and goals. Make these feel like a real trainer wrote them specifically for this person.
 
-Be specific. Use real exercise names. Include sets, reps, rest periods. Write directly to ${state.firstName}.`;
+Be specific. Use real exercise names. Include sets, reps, rest periods. Write directly to ${state.firstName}.${feedbackSection||''}`;
+}
+
+async function generateWorkout(){
+  state.injuries=document.getElementById('injuries').value.trim();
+  state.notes=document.getElementById('notes').value.trim();
+  document.getElementById('formScreen').classList.remove('active');
+  document.getElementById('generatingScreen').innerHTML=`<div class="spinner"></div><div class="gen-title">BUILDING YOUR PLAN</div><div class="gen-sub">Applying expert methodology to your profile...<br>This takes about 20–30 seconds.</div>`;
+  document.getElementById('generatingScreen').classList.add('active');
+
+  const prompt=buildPrompt('');
+  const profile={firstName:state.firstName,email:state.email,gender:state.gender,level:state.level,goal:state.goal,equipment:state.equipment,days:state.days,cardio:state.cardio,injuries:state.injuries,notes:state.notes};
 
   try{
     const res=await fetch("/api/generate",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({prompt:prompt})
+      body:JSON.stringify({prompt:prompt,profile:profile})
     });
     console.log("Fetch status:", res.status);
     if(!res.ok){
@@ -537,9 +568,10 @@ Be specific. Use real exercise names. Include sets, reps, rest periods. Write di
     }
     const data=await res.json();
     if(!data.text) throw new Error("Bad response: "+JSON.stringify(data).slice(0,300));
-    const markdown=data.text;
-    state.workoutMarkdown=markdown;
-    showResult(markdown);
+    state.workoutMarkdown=data.text;
+    state.intakeId=data.intakeId||null;
+    state.generationNumber=data.generationNumber||1;
+    showResult(state.workoutMarkdown);
 
   }catch(e){
     console.error("API call failed:", e.name, e.message);
@@ -555,6 +587,68 @@ Be specific. Use real exercise names. Include sets, reps, rest periods. Write di
   }
 }
 
+async function submitRegeneration(){
+  const feedback=document.getElementById('regenFeedback').value.trim();
+  if(!feedback){showToast('Tell us what you’d like different first.','error');return;}
+  const btn=document.getElementById('submitRegenBtn');
+  btn.disabled=true;btn.textContent='Regenerating...';
+
+  const feedbackSection=`\n\nCLIENT FEEDBACK ON PREVIOUS VERSION (please address this directly):\n"${feedback}"\n\nRevise the plan to directly address this feedback while still following the methodology above. Produce a complete new plan reflecting the requested changes — don't just patch individual pieces.`;
+  const prompt=buildPrompt(feedbackSection);
+
+  try{
+    const res=await fetch("/api/generate",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({prompt:prompt,intakeId:state.intakeId,feedback:feedback})
+    });
+    if(!res.ok){
+      const errBody=await res.text();
+      throw new Error("HTTP "+res.status+": "+errBody.slice(0,300));
+    }
+    const data=await res.json();
+    if(!data.text) throw new Error("Bad response: "+JSON.stringify(data).slice(0,300));
+    state.workoutMarkdown=data.text;
+    state.intakeId=data.intakeId||state.intakeId;
+    state.generationNumber=data.generationNumber||(state.generationNumber+1);
+    document.getElementById('workoutContent').innerHTML=renderMarkdown(state.workoutMarkdown);
+    updateRegenUI();
+    closeRegenModal();
+    window.scrollTo({top:0,behavior:'smooth'});
+    showToast('✅ Plan updated!','success');
+  }catch(e){
+    console.error("Regenerate failed:", e.name, e.message);
+    showToast('Failed to regenerate: '+e.message,'error');
+  }
+  btn.disabled=false;btn.textContent='Regenerate →';
+}
+
+function openRegenModal(){
+  if(state.generationNumber>=MAX_GENERATIONS)return;
+  document.getElementById('regenFeedback').value='';
+  document.getElementById('regenFeedbackCount').textContent='0 / 300';
+  document.getElementById('regenModal').classList.add('active');
+}
+function closeRegenModal(){document.getElementById('regenModal').classList.remove('active');}
+
+function updateRegenUI(){
+  const remaining=Math.max(0,MAX_GENERATIONS-state.generationNumber);
+  const label=document.getElementById('regenCountLabel');
+  const btn=document.getElementById('regenBtn');
+  if(!btn||!label)return;
+  if(remaining<=0){
+    btn.disabled=true;
+    btn.style.opacity='0.4';
+    btn.style.cursor='not-allowed';
+    label.textContent="You've used all 3 regenerations for this plan.";
+  }else{
+    btn.disabled=false;
+    btn.style.opacity='1';
+    btn.style.cursor='pointer';
+    label.textContent=`${remaining} regeneration${remaining===1?'':'s'} left`;
+  }
+}
+
 function showResult(md){
   document.getElementById('generatingScreen').classList.remove('active');
   document.getElementById('resultScreen').classList.add('active');
@@ -562,6 +656,7 @@ function showResult(md){
   document.getElementById('resultSubtitle').textContent=`${levelLabels[state.level]} · ${goalLabels[state.goal]} · ${state.days} days/week`;
   document.getElementById('workoutContent').innerHTML=renderMarkdown(md);
   document.getElementById('modalEmail').value=state.email;
+  updateRegenUI();
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
