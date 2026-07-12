@@ -177,6 +177,93 @@ function extractStructuredPlan(rawText) {
   }
 }
 
+// Splits a markdown table block (header row, separator row, data rows)
+// into an array of row objects keyed by header name. Row lines have
+// leading/trailing pipes (so a naive split needs slice(1, -1)) but the
+// header line's capture in this function does NOT — same distinction
+// that caused the on-screen table rendering bug fixed earlier in this
+// project, so this deliberately does not repeat it.
+function parseMarkdownTable(tableBlock) {
+  const lines = tableBlock
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l.startsWith("|"));
+  if (lines.length < 2) return [];
+
+  const headerCells = lines[0].split("|").map((c) => c.trim()).filter((c) => c.length > 0);
+  const rows = [];
+  for (let i = 2; i < lines.length; i++) {
+    const cells = lines[i].split("|").map((c) => c.trim());
+    const dataCells = cells.slice(1, -1);
+    if (dataCells.every((c) => c === "")) continue;
+    const row = {};
+    headerCells.forEach((h, idx) => {
+      row[h] = dataCells[idx] || "";
+    });
+    rows.push(row);
+  }
+  return rows;
+}
+
+// Fallback for when Claude either skips the structured json block or
+// returns one that doesn't parse — derives the same day/exercise data
+// straight from the markdown plan's Main Session tables instead. Pure
+// string parsing, no extra Anthropic API call, so this never adds
+// cost, no matter how often it triggers.
+//
+// Deliberately does NOT try to guess week boundaries (e.g. from days
+// per week) — that requires assuming Claude's actual output matches
+// the client's requested day count exactly, which isn't guaranteed,
+// and a wrong guess would mislabel days into the wrong week. Every
+// fallback-derived day is numbered sequentially within week 1 instead
+// — no arithmetic to get wrong. This costs nothing in practice: the
+// existing prompt already tells Claude to only ever generate one
+// week per response (never a full multi-week rolling cycle in one
+// go — see "Rolling Split — Token Limit Management" above), so real
+// plans are always single-week today regardless of which path
+// produces the structured data.
+//
+// Still recovers the part that actually matters for logging: each
+// day's exercises, sets, and reps. Best-effort like everything else
+// here — any failure just means structured_plan stays null, never
+// affects the plan itself.
+function parseStructuredPlanFromMarkdown(markdown) {
+  try {
+    const headingRegex = /^##\s+[^:\n]+:\s*(.+)$/gm;
+    const headings = [...markdown.matchAll(headingRegex)];
+    if (headings.length === 0) return null;
+
+    const days = [];
+    headings.forEach((match, index) => {
+      const label = match[1].trim();
+      const start = match.index + match[0].length;
+      const end = index + 1 < headings.length ? headings[index + 1].index : markdown.length;
+      const section = markdown.slice(start, end);
+
+      const mainSessionMatch = section.match(/###\s*Main Session[\s\S]*?(?=\n###|\n##|$)/i);
+      if (!mainSessionMatch) return;
+
+      const exercises = parseMarkdownTable(mainSessionMatch[0])
+        .map((row, i) => ({
+          order: i + 1,
+          name: row["Exercise"] || "",
+          sets: row["Sets"] || "",
+          reps: row["Reps"] || "",
+        }))
+        .filter((ex) => ex.name);
+
+      if (exercises.length === 0) return;
+
+      days.push({ week: 1, day: days.length + 1, label, exercises });
+    });
+
+    return days.length > 0 ? { days } : null;
+  } catch (err) {
+    console.error("Fallback markdown structured-plan parse failed:", err.message);
+    return null;
+  }
+}
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -2172,8 +2259,19 @@ End with:
     }
 
     const data = await response.json();
-    const { structuredPlan, markdown: rawMarkdown } = extractStructuredPlan(data.content[0].text);
+    const { structuredPlan: parsedStructuredPlan, markdown: rawMarkdown } = extractStructuredPlan(
+      data.content[0].text
+    );
     const text = sanitizeDashes(rawMarkdown);
+
+    // If we asked for structured data (verified visit) but Claude's
+    // json block was missing or didn't parse, fall back to deriving
+    // it from the markdown tables directly instead of just losing it —
+    // see parseStructuredPlanFromMarkdown above for why this is safe
+    // to always try (zero extra cost, never blocks the plan itself).
+    const structuredPlan = verifiedEmail
+      ? parsedStructuredPlan || parseStructuredPlanFromMarkdown(text)
+      : null;
 
     // Best-effort save — see supabaseRequest() above. Won't throw or
     // block the response if it fails.
