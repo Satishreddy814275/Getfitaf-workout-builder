@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>GetFitAF — Build Your Workout</title>
+<title>GetFitAF - Build Your Workout</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Bebas+Neue&display=swap');
 :root{--bg:#0a0a0a;--bg2:#111111;--bg3:#1a1a1a;--gold:#F5B800;--gold2:#FFD055;--gold-dim:#a07c00;--white:#FFFFFF;--gray:#888888;--gray2:#444444;--border:#222222;--success:#4CAF50;--error:#e53935;}
@@ -133,7 +133,7 @@ textarea.field-input{resize:vertical;min-height:80px;}
     <span class="logo-text">GETFITAF</span>
   </div>
   <h1>YOUR WORKOUT.<br><span>YOUR WAY.</span></h1>
-  <p>Answer a few quick questions and we'll build you a personalised workout plan — powered by expert methodology.</p>
+  <p>Answer a few quick questions and we'll build you a personalised workout plan - powered by expert methodology.</p>
   <button class="btn-primary" onclick="startForm()">BUILD MY WORKOUT →</button>
 </div>
 
@@ -175,7 +175,7 @@ textarea.field-input{resize:vertical;min-height:80px;}
   <!-- STEP 2 -->
   <div class="step" id="step2">
     <div class="step-title">What's your <span>fitness level?</span></div>
-    <div class="step-sub">Be honest — this shapes everything about your plan.</div>
+    <div class="step-sub">Be honest - this shapes everything about your plan.</div>
     <div class="option-grid">
       <div class="option-card" onclick="selectOption(this,'level','absolute-beginner')">
         <div class="icon">🌱</div><div class="label">Absolute Beginner</div>
@@ -265,7 +265,7 @@ textarea.field-input{resize:vertical;min-height:80px;}
     <div class="field-group" style="margin-top:28px">
       <label class="field-label">Do you enjoy cardio / HIIT?</label>
       <div class="toggle-row" onclick="selectToggle(this,'cardio','love-it')">
-        <span class="t-label">Love it — bring it on</span><div class="t-check"></div>
+        <span class="t-label">Love it - bring it on</span><div class="t-check"></div>
       </div>
       <div class="toggle-row" onclick="selectToggle(this,'cardio','okay')">
         <span class="t-label">I'm okay with it</span><div class="t-check"></div>
@@ -305,7 +305,7 @@ textarea.field-input{resize:vertical;min-height:80px;}
 <div class="generating-screen" id="generatingScreen">
   <div class="spinner"></div>
   <div class="gen-title">BUILDING YOUR PLAN</div>
-  <div class="gen-sub">Applying expert methodology to your profile...<br>This takes about 20–30 seconds.</div>
+  <div class="gen-sub">Applying expert methodology to your profile...<br>This usually takes 1-2 minutes.</div>
 </div>
 
 <!-- RESULT -->
@@ -366,10 +366,16 @@ textarea.field-input{resize:vertical;min-height:80px;}
 <div class="modal-overlay" id="regenModal">
   <div class="modal">
     <h3>🔄 Regenerate Your Plan</h3>
-    <p>Tell us what to change and we'll rebuild your plan around it — e.g. "this feels too generic, can I get more variety" or "swap the HIIT day for more strength work."</p>
+    <p>Tell us what to change and we'll rebuild your plan around it. A few examples:</p>
+    <ul style="color:var(--gray);font-size:0.85rem;line-height:1.8;margin:0 0 20px 18px;padding:0">
+      <li>"I don't actually have any equipment - just bodyweight"</li>
+      <li>"This feels too generic - give me more variety"</li>
+      <li>"Swap the HIIT day for more strength work"</li>
+      <li>"My knees hurt, avoid lunges and jumping"</li>
+    </ul>
     <div class="field-group">
       <label class="field-label">What should change?</label>
-      <textarea class="field-input" id="regenFeedback" placeholder="Tell us what you'd like different..." rows="3" oninput="updateCharCount(this,'regenFeedbackCount',300)"></textarea>
+      <textarea class="field-input" id="regenFeedback" placeholder="e.g. I only have dumbbells, no bench available..." rows="3" oninput="updateCharCount(this,'regenFeedbackCount',300)"></textarea>
       <div class="char-count" id="regenFeedbackCount">0 / 300</div>
     </div>
     <div class="modal-actions">
@@ -453,7 +459,7 @@ SPLIT SELECTION RULES:
 - Muscle gain: Limit HIIT (max 1x/week after 2-3 months), focus on strength splits
 - 3-4 days available: Whole Body splits (WB A / Cardio / WB B or Upper/Lower/Whole Body)
 - 5-6 days: PPL or Upper/Lower splits
-- Fat loss: ALWAYS retain at least 1 cardio/HIIT session per week — non-negotiable
+- Fat loss: ALWAYS retain at least 1 cardio/HIIT session per week - non-negotiable
 - Muscle gain: Exclude HIIT in early phases
 
 MOVEMENT PATTERNS (must cover ALL across the full week):
@@ -502,10 +508,10 @@ REST PERIODS:
 REHAB RULES (for injury clients):
 - Supported before unsupported (leg press before barbell squat)
 - Horizontal loading before vertical
-- Activate glutes and core BEFORE any hinge pattern — never start with hinge
+- Activate glutes and core BEFORE any hinge pattern - never start with hinge
 - Back pain: AVOID barbell squats, deadlifts, forward lunges, bent over rows, crunches, farmer's carry
 - Back pain USE: leg press, hip thruster, machine single-leg curl, machine abductions, Pallof press
-- Always: pain is the guide — stop and regress if any exercise causes pain
+- Always: pain is the guide - stop and regress if any exercise causes pain
 
 CLIENT PROFILE:
 - Name: ${state.firstName}
@@ -539,17 +545,17 @@ Table: Order | Exercise | Pattern | Sets | Reps | Rest | Notes
 ### Cool-Down
 Table: Stretch | Duration
 
-## KEY COACHING NOTES FOR ${state.firstName.toUpperCase()}
-5 personalised bullet points based on their specific profile, level, and goals. Make these feel like a real trainer wrote them specifically for this person.
+## KEY COACHING NOTES FOR YOU
+5 personalised bullet points based on their specific profile, level, and goals. Write these directly to ${state.firstName} in second person ("you"), like a coach speaking to them - not about them in third person.
 
-Be specific. Use real exercise names. Include sets, reps, rest periods. Write directly to ${state.firstName}.${feedbackSection||''}`;
+Be specific. Use real exercise names. Include sets, reps, rest periods. Write directly to ${state.firstName}. Never use em dashes (—) or double hyphens (--) anywhere in the plan - use a single hyphen with spaces instead.${feedbackSection||''}`;
 }
 
 async function generateWorkout(){
   state.injuries=document.getElementById('injuries').value.trim();
   state.notes=document.getElementById('notes').value.trim();
   document.getElementById('formScreen').classList.remove('active');
-  document.getElementById('generatingScreen').innerHTML=`<div class="spinner"></div><div class="gen-title">BUILDING YOUR PLAN</div><div class="gen-sub">Applying expert methodology to your profile...<br>This takes about 20–30 seconds.</div>`;
+  document.getElementById('generatingScreen').innerHTML=`<div class="spinner"></div><div class="gen-title">BUILDING YOUR PLAN</div><div class="gen-sub">Applying expert methodology to your profile...<br>This usually takes 1-2 minutes.</div>`;
   document.getElementById('generatingScreen').classList.add('active');
 
   const prompt=buildPrompt('');
@@ -593,7 +599,7 @@ async function submitRegeneration(){
   const btn=document.getElementById('submitRegenBtn');
   btn.disabled=true;btn.textContent='Regenerating...';
 
-  const feedbackSection=`\n\nCLIENT FEEDBACK ON PREVIOUS VERSION (please address this directly):\n"${feedback}"\n\nRevise the plan to directly address this feedback while still following the methodology above. Produce a complete new plan reflecting the requested changes — don't just patch individual pieces.`;
+  const feedbackSection=`\n\nCLIENT FEEDBACK ON PREVIOUS VERSION (please address this directly):\n"${feedback}"\n\nRevise the plan to directly address this feedback while still following the methodology above. Produce a complete new plan reflecting the requested changes - don't just patch individual pieces.`;
   const prompt=buildPrompt(feedbackSection);
 
   try{
@@ -664,7 +670,12 @@ function renderMarkdown(md){
   let h=md;
   // Tables
   h=h.replace(/\|(.+)\|\r?\n\|[-\| :]+\|\r?\n((?:\|.+\|\r?\n?)*)/g,(_,header,rows)=>{
-    const ths=header.split('|').slice(1,-1).map(c=>`<th>${c.trim()}</th>`).join('');
+    // Note: `header` is captured WITHOUT its outer pipes (the regex's
+    // \|...\| consumes them), so splitting on '|' already yields exactly
+    // the real columns — no slice needed. `rows` lines DO still have their
+    // outer pipes (captured as part of the wildcard), so those still need
+    // slice(1,-1) to drop the empty strings from the leading/trailing pipe.
+    const ths=header.split('|').map(c=>`<th>${c.trim()}</th>`).join('');
     const trs=rows.trim().split('\n').map(row=>{
       const cells=row.split('|').slice(1,-1);
       return cells.length?`<tr>${cells.map(c=>`<td>${c.trim()}</td>`).join('')}</tr>`:'';
@@ -710,7 +721,7 @@ function generatePDF(){
 
     function addFooter(){
       doc.setFontSize(8);doc.setTextColor(...gry);
-      doc.text('GetFitAF — getfitaf.fitness',margin,pageH-10);
+      doc.text('GetFitAF - getfitaf.fitness',margin,pageH-10);
       doc.text(`${state.firstName}'s Workout Plan`,pageW-margin,pageH-10,{align:'right'});
     }
     function newPage(){doc.addPage();y=22;addFooter();}
@@ -786,7 +797,7 @@ function generatePDF(){
     showToast('✅ PDF downloaded!','success');
   }catch(e){
     console.error(e);
-    showToast('PDF error — please try again.','error');
+    showToast('PDF error - please try again.','error');
   }
 }
 
