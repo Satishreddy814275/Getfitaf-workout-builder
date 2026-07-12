@@ -135,7 +135,7 @@ function sanitizeDashes(text) {
   return text.replace(/[—–]/g, "-").replace(/-{2,}/g, "-");
 }
 
-async function saveGeneration(intakeId, generationNumber, feedback, markdown) {
+async function saveGeneration(intakeId, generationNumber, feedback, markdown, structuredPlan) {
   await supabaseRequest("workout_generations", {
     method: "POST",
     headers: { Prefer: "return=minimal" },
@@ -145,9 +145,36 @@ async function saveGeneration(intakeId, generationNumber, feedback, markdown) {
         generation_number: generationNumber,
         feedback_text: feedback || null,
         markdown,
+        // Only ever set for verified (logged-in community member)
+        // visits — see the STRUCTURED DATA prompt block below. Null
+        // for anonymous lead-magnet visits, which never asked Claude
+        // to produce this in the first place.
+        structured_plan: structuredPlan || null,
       },
     ]),
   });
+}
+
+// Pulls the structured day/exercise data (used by the workout logging
+// feature) out of Claude's response, and strips it out of what's shown
+// to the client — nobody should ever see a raw json block glued to
+// their plan. Best-effort: if the block is missing or doesn't parse,
+// this just returns no structured data and the original text
+// untouched (minus the stripped block, if one was found), so a
+// malformed structured block can never break the actual plan a client
+// receives.
+function extractStructuredPlan(rawText) {
+  const match = rawText.match(/```json\s*([\s\S]*?)```/);
+  if (!match) return { structuredPlan: null, markdown: rawText };
+
+  const markdown = (rawText.slice(0, match.index) + rawText.slice(match.index + match[0].length)).trim();
+
+  try {
+    return { structuredPlan: JSON.parse(match[1]), markdown };
+  } catch (err) {
+    console.error("Failed to parse structured plan JSON:", err.message);
+    return { structuredPlan: null, markdown };
+  }
 }
 
 export default async function handler(req, res) {
@@ -2072,6 +2099,26 @@ If a rolling cycle is requested:
 | 6 days | Push / Pull / Legs / Cardio / Upper / Lower OR Upper / Lower / Cardio / Upper / Lower / HIIT |
 `;
 
+    // Only requested for verified (logged-in community member) visits
+    // — anonymous lead-magnet visits through the raw workoutbuilder
+    // link never see the workout-logging feature this powers, so
+    // there's no reason to spend extra output tokens generating it for
+    // them. Deliberately scoped to just the Main Session exercises
+    // (name/sets/reps) per day, not warm-up/cool-down/notes — that's
+    // all the logging feature actually needs, and keeping this small
+    // avoids materially increasing the risk of the full response
+    // getting cut off (see the "it will get cut off" warning already
+    // in the methodology above).
+    const structuredDataInstructions = verifiedEmail
+      ? `
+STRUCTURED DATA — output this FIRST, before anything else in your response, as a single fenced json code block:
+\`\`\`json
+{"days":[{"week":1,"day":1,"label":"Push","exercises":[{"order":1,"name":"Barbell bench press","sets":"3-5","reps":"5"}]}]}
+\`\`\`
+Rules: "week" and "day" are 1-indexed. "label" is the session type shown in that day's heading (e.g. "Push", "Upper Body A", "Cardio HIIT"). Include one "days" entry per training day in the full plan (skip rest days), listing every exercise from that day's Main Session table in the same order, using its exact name, sets, and reps as written there. Do not include warm-up or cool-down exercises. After the closing \`\`\` of this block, output the full markdown plan exactly as specified below — do not restate or reference the json block again anywhere else in your response.
+`
+      : "";
+
     const systemPrompt = `You are an expert personal trainer at GetFitAF. Build precise, personalised workout programs following the methodology below exactly.
 
 ${skillContent}
@@ -2085,7 +2132,7 @@ CRITICAL OUTPUT RULES:
 6. Write directly to the client by name throughout the plan.
 7. Keep the full plan completable within this single response — if the split chosen would exceed this, simplify the split rather than cutting sessions short.
 8. Never use em dashes (—) or double hyphens (--) anywhere in the plan. Use a single hyphen with spaces instead, e.g. "Warm-up - light cardio to raise heart rate."
-
+${structuredDataInstructions}
 OUTPUT FORMAT — use markdown with tables:
 
 ## YOUR PROGRAMME OVERVIEW
@@ -2125,12 +2172,13 @@ End with:
     }
 
     const data = await response.json();
-    const text = sanitizeDashes(data.content[0].text);
+    const { structuredPlan, markdown: rawMarkdown } = extractStructuredPlan(data.content[0].text);
+    const text = sanitizeDashes(rawMarkdown);
 
     // Best-effort save — see supabaseRequest() above. Won't throw or
     // block the response if it fails.
     if (intakeId) {
-      await saveGeneration(intakeId, generationNumber, feedback, text);
+      await saveGeneration(intakeId, generationNumber, feedback, text, structuredPlan);
     }
 
     return res.status(200).json({ text, intakeId, generationNumber });
