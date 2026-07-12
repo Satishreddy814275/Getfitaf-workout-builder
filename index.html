@@ -390,6 +390,16 @@ textarea.field-input{resize:vertical;min-height:80px;}
 <script>
 const state={firstName:'',email:'',gender:'',level:'',goal:'',equipment:'',days:null,cardio:'',injuries:'',notes:'',workoutMarkdown:'',intakeId:null,generationNumber:1};
 const MAX_GENERATIONS=4; // 1 original + up to 3 regenerations
+
+// If someone arrived here via a link from the community app (the nav
+// link or welcome card, both only shown to logged-in members), the
+// URL carries a short-lived signed token proving who they really are
+// — see api/generate.js for verification. We don't decode it here
+// (no way to check the signature client-side without exposing the
+// secret), just pass it straight through on every request so the
+// server can verify it. Anonymous/lead-magnet visitors simply won't
+// have one, and everything works exactly as before for them.
+const handoffToken=new URLSearchParams(window.location.search).get('token');
 const levelLabels={'absolute-beginner':'Absolute Beginner','beginner':'Beginner','intermediate':'Intermediate','athlete':'Athlete'};
 const goalLabels={'fat-loss':'Fat Loss','muscle-gain':'Muscle Gain','general-fitness':'General Fitness','rehab':'Rehab / Recovery'};
 const equipLabels={'bodyweight':'No Equipment (Bodyweight)','home':'Home Gym (Bands/Dumbbells)','full-gym':'Full Gym Access'};
@@ -565,7 +575,7 @@ async function generateWorkout(){
     const res=await fetch("/api/generate",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({prompt:prompt,profile:profile})
+      body:JSON.stringify({prompt:prompt,profile:profile,token:handoffToken})
     });
     console.log("Fetch status:", res.status);
     if(!res.ok){
@@ -606,7 +616,7 @@ async function submitRegeneration(){
     const res=await fetch("/api/generate",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({prompt:prompt,intakeId:state.intakeId,feedback:feedback})
+      body:JSON.stringify({prompt:prompt,intakeId:state.intakeId,feedback:feedback,token:handoffToken})
     });
     if(!res.ok){
       const errBody=await res.text();
