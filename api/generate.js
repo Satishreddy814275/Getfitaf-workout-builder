@@ -1,3 +1,44 @@
+import { createHmac, timingSafeEqual } from "crypto";
+
+// --- Verified handoff from the community app ------------------------
+// The workout builder itself has no login of its own — this is how it
+// recognises someone who clicked through from community.getfitaf.fitness
+// while already logged in, without needing to share Supabase session
+// state across the two separate apps (fragile: community-app stores
+// its session in cookies via @supabase/ssr, while a plain client-side
+// Supabase client defaults to localStorage, which isn't shared across
+// subdomains anyway). Instead, community-app signs a short-lived token
+// containing the member's real email server-side, and this verifies
+// it independently using the same shared secret
+// (WORKOUT_BUILDER_HANDOFF_SECRET — must match exactly in both
+// Vercel projects' env vars). If the token is missing, expired, or
+// doesn't verify, this just falls back to treating the visit as
+// anonymous — nothing breaks, it just doesn't get the "verified"
+// treatment.
+function verifyHandoffToken(token) {
+  const secret = process.env.WORKOUT_BUILDER_HANDOFF_SECRET;
+  if (!secret || !token) return null;
+
+  const [encodedPayload, signature] = String(token).split(".");
+  if (!encodedPayload || !signature) return null;
+
+  try {
+    const expectedSignature = createHmac("sha256", secret)
+      .update(encodedPayload)
+      .digest("base64url");
+    const a = Buffer.from(signature);
+    const b = Buffer.from(expectedSignature);
+    if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
+
+    const { email, exp } = JSON.parse(Buffer.from(encodedPayload, "base64url").toString());
+    if (typeof email !== "string" || typeof exp !== "number") return null;
+    if (Date.now() > exp) return null;
+    return email;
+  } catch {
+    return null;
+  }
+}
+
 // --- Persistence (Supabase) ---------------------------------------
 // Stores every intake + every generation (original and regenerations,
 // with the feedback text that drove each regen) so this data can be
@@ -12,6 +53,7 @@
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const MAX_GENERATIONS = 4; // 1 original + up to 3 regenerations
+const MAX_NEW_INTAKES_PER_MONTH = 3; // fresh plans, separate from regenerations above
 
 async function supabaseRequest(path, options = {}) {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) return null;
@@ -36,7 +78,7 @@ async function supabaseRequest(path, options = {}) {
   }
 }
 
-async function createIntake(profile) {
+async function createIntake(profile, verifiedEmail) {
   const rows = await supabaseRequest("workout_intakes", {
     method: "POST",
     headers: { Prefer: "return=representation" },
@@ -52,10 +94,26 @@ async function createIntake(profile) {
         cardio: profile?.cardio || null,
         injuries: profile?.injuries || null,
         notes: profile?.notes || null,
+        verified_email: !!verifiedEmail,
       },
     ]),
   });
   return rows?.[0]?.id || null;
+}
+
+// How many brand-new plans (not regenerations of an existing one) this
+// email has started in the last 30 days. Best-effort like everything
+// else here — if Supabase isn't configured or the query fails, this
+// returns 0 rather than blocking generation, so a persistence hiccup
+// can never itself prevent someone from getting their workout.
+async function countRecentIntakes(email) {
+  const trimmed = (email || "").trim();
+  if (!trimmed) return 0;
+  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const rows = await supabaseRequest(
+    `workout_intakes?email=ilike.${encodeURIComponent(trimmed)}&created_at=gte.${encodeURIComponent(since)}&select=id`
+  );
+  return rows?.length || 0;
 }
 
 async function nextGenerationNumber(intakeId) {
@@ -101,11 +159,18 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method Not Allowed" });
 
   try {
-    const { prompt, profile, intakeId: incomingIntakeId, feedback } = req.body;
+    const { prompt, profile, intakeId: incomingIntakeId, feedback, token } = req.body;
 
     if (!prompt) {
       return res.status(400).json({ error: "Missing required field: prompt" });
     }
+
+    // If this request carries a valid signed handoff from
+    // community-app, we know the real, verified email of whoever's
+    // asking — not just whatever they typed into the form. Falls back
+    // to null (anonymous) for lead-magnet visitors with no token,
+    // which is the normal, expected case for that traffic.
+    const verifiedEmail = verifyHandoffToken(token);
 
     // Figure out whether this is the original generation or a
     // regeneration, and enforce the 3-regeneration cap server-side
@@ -124,7 +189,23 @@ export default async function handler(req, res) {
         });
       }
     } else {
-      intakeId = await createIntake(profile);
+      // New plan, not a regeneration — this is the unlimited-by-default
+      // path, so it's the one that needs the monthly cap. Verified
+      // visits are checked by their real email; anonymous visits fall
+      // back to whatever email they typed in (spoofable, but still a
+      // reasonable deterrent against casual repeat use).
+      const emailForCapCheck = verifiedEmail || (profile?.email || "").trim();
+      if (emailForCapCheck) {
+        const recentCount = await countRecentIntakes(emailForCapCheck);
+        if (recentCount >= MAX_NEW_INTAKES_PER_MONTH) {
+          return res.status(429).json({
+            error:
+              "You've already built the maximum number of new plans this month. Check your email for a past one, or come back later for a new one.",
+          });
+        }
+      }
+
+      intakeId = await createIntake(profile, verifiedEmail);
       generationNumber = 1;
     }
 
