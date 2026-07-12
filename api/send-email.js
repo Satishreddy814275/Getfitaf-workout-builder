@@ -19,7 +19,11 @@ export default async function handler(req, res) {
 
       // Tables
       html = html.replace(/\|(.+)\|\r?\n\|[-\| :]+\|\r?\n((?:\|.+\|\r?\n?)*)/g, (_, header, rows) => {
-        const ths = header.split('|').slice(1,-1).map(c =>
+        // `header` is captured without its outer pipes already, so no
+        // slice needed here (unlike the row lines below, which still
+        // carry their outer pipes and need slice(1,-1) to drop the
+        // resulting empty leading/trailing strings).
+        const ths = header.split('|').map(c =>
           `<th style="padding:8px 12px;background:#1a1100;color:#F5B800;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #333">${c.trim()}</th>`
         ).join('');
         const trs = rows.trim().split('\n').map((row, i) => {

@@ -66,6 +66,17 @@ async function nextGenerationNumber(intakeId) {
   return latest + 1;
 }
 
+// Claude tends to write with em dashes (—) by default. Satish wants
+// plans to read with plain single hyphens instead, so this is enforced
+// two ways: an explicit instruction in CRITICAL OUTPUT RULES below
+// (so the model tries to comply on its own), plus this guaranteed
+// cleanup pass on whatever it actually returns, since prompt
+// instructions alone aren't 100% reliable. Runs on every generation
+// and regeneration.
+function sanitizeDashes(text) {
+  return text.replace(/[—–]/g, "-").replace(/-{2,}/g, "-");
+}
+
 async function saveGeneration(intakeId, generationNumber, feedback, markdown) {
   await supabaseRequest("workout_generations", {
     method: "POST",
@@ -1992,6 +2003,7 @@ CRITICAL OUTPUT RULES:
 5. No two sessions of the same type within the same week can repeat — Push A must differ from Push B in exercise selection.
 6. Write directly to the client by name throughout the plan.
 7. Keep the full plan completable within this single response — if the split chosen would exceed this, simplify the split rather than cutting sessions short.
+8. Never use em dashes (—) or double hyphens (--) anywhere in the plan. Use a single hyphen with spaces instead, e.g. "Warm-up - light cardio to raise heart rate."
 
 OUTPUT FORMAT — use markdown with tables:
 
@@ -2008,8 +2020,8 @@ Then for each training day:
 | Stretch | Duration |
 
 End with:
-## KEY COACHING NOTES FOR [CLIENT NAME]
-5 personalised bullet points based on their specific profile, goals, and the programme built.`;
+## KEY COACHING NOTES FOR YOU
+5 personalised bullet points based on their specific profile, goals, and the programme built. Write these directly to the client in second person ("you"), like a coach speaking to them — not about them.`;
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -2032,7 +2044,7 @@ End with:
     }
 
     const data = await response.json();
-    const text = data.content[0].text;
+    const text = sanitizeDashes(data.content[0].text);
 
     // Best-effort save — see supabaseRequest() above. Won't throw or
     // block the response if it fails.
