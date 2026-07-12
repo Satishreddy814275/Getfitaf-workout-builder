@@ -1,3 +1,86 @@
+// --- Persistence (Supabase) ---------------------------------------
+// Stores every intake + every generation (original and regenerations,
+// with the feedback text that drove each regen) so this data can be
+// reused later without re-collecting it from clients. Uses the
+// service-role key server-side only — never exposed to the client,
+// same pattern as ANTHROPIC_API_KEY below.
+//
+// All of this is best-effort: if the env vars aren't set yet, or a
+// Supabase call fails for any reason, we log it and let the workout
+// generation itself proceed exactly as it did before this was added.
+// Nothing here should ever be able to break a client's experience.
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const MAX_GENERATIONS = 4; // 1 original + up to 3 regenerations
+
+async function supabaseRequest(path, options = {}) {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) return null;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+      ...options,
+      headers: {
+        apikey: SUPABASE_SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        "Content-Type": "application/json",
+        ...(options.headers || {}),
+      },
+    });
+    if (!res.ok) {
+      console.error("Supabase error:", path, res.status, await res.text());
+      return null;
+    }
+    return await res.json();
+  } catch (err) {
+    console.error("Supabase request failed:", path, err.message);
+    return null;
+  }
+}
+
+async function createIntake(profile) {
+  const rows = await supabaseRequest("workout_intakes", {
+    method: "POST",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify([
+      {
+        first_name: profile?.firstName || "",
+        email: profile?.email || "",
+        gender: profile?.gender || null,
+        level: profile?.level || null,
+        goal: profile?.goal || null,
+        equipment: profile?.equipment || null,
+        days: profile?.days || null,
+        cardio: profile?.cardio || null,
+        injuries: profile?.injuries || null,
+        notes: profile?.notes || null,
+      },
+    ]),
+  });
+  return rows?.[0]?.id || null;
+}
+
+async function nextGenerationNumber(intakeId) {
+  const rows = await supabaseRequest(
+    `workout_generations?intake_id=eq.${intakeId}&select=generation_number&order=generation_number.desc&limit=1`
+  );
+  const latest = rows?.[0]?.generation_number || 0;
+  return latest + 1;
+}
+
+async function saveGeneration(intakeId, generationNumber, feedback, markdown) {
+  await supabaseRequest("workout_generations", {
+    method: "POST",
+    headers: { Prefer: "return=minimal" },
+    body: JSON.stringify([
+      {
+        intake_id: intakeId,
+        generation_number: generationNumber,
+        feedback_text: feedback || null,
+        markdown,
+      },
+    ]),
+  });
+}
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -7,7 +90,32 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method Not Allowed" });
 
   try {
-    const { prompt } = req.body;
+    const { prompt, profile, intakeId: incomingIntakeId, feedback } = req.body;
+
+    if (!prompt) {
+      return res.status(400).json({ error: "Missing required field: prompt" });
+    }
+
+    // Figure out whether this is the original generation or a
+    // regeneration, and enforce the 3-regeneration cap server-side
+    // (not just in the UI) so it can't be bypassed by calling the API
+    // directly. If Supabase isn't configured, intakeId stays null and
+    // this is skipped entirely — generation still works, just without
+    // the cap or persistence.
+    let intakeId = incomingIntakeId || null;
+    let generationNumber = 1;
+
+    if (intakeId) {
+      generationNumber = await nextGenerationNumber(intakeId);
+      if (generationNumber > MAX_GENERATIONS) {
+        return res.status(429).json({
+          error: "You've reached the limit of 3 regenerations for this plan.",
+        });
+      }
+    } else {
+      intakeId = await createIntake(profile);
+      generationNumber = 1;
+    }
 
     const skillContent = `---
 name: workout-builder
@@ -1924,7 +2032,15 @@ End with:
     }
 
     const data = await response.json();
-    return res.status(200).json({ text: data.content[0].text });
+    const text = data.content[0].text;
+
+    // Best-effort save — see supabaseRequest() above. Won't throw or
+    // block the response if it fails.
+    if (intakeId) {
+      await saveGeneration(intakeId, generationNumber, feedback, text);
+    }
+
+    return res.status(200).json({ text, intakeId, generationNumber });
 
   } catch (err) {
     return res.status(500).json({ error: err.message });
