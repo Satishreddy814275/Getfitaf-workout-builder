@@ -116,9 +116,17 @@ select.field-input option{background:var(--bg3);}
 .toast.error{border-color:var(--error);}
 .char-count{font-size:0.8rem;color:var(--gray);text-align:right;margin-top:6px;}
 textarea.field-input{resize:vertical;min-height:80px;}
+/* Only shown to visitors who arrived with a handoff token (i.e. came
+   from the community app while logged in) - hidden by default, shown
+   via JS below the handoffToken check. Anonymous/lead-magnet visitors
+   never see this, so the standalone free experience is untouched. */
+.community-back{display:none;position:fixed;top:20px;left:20px;z-index:60;background:var(--bg);border:1px solid var(--border);color:var(--gray);padding:8px 16px;border-radius:4px;font-size:0.85rem;text-decoration:none;transition:all 0.2s;font-family:'Inter',sans-serif;}
+.community-back:hover{border-color:var(--gold);color:var(--gold);}
 </style>
 </head>
 <body>
+
+<a href="https://community.getfitaf.fitness/feed" class="community-back" id="communityBackLink">← Community</a>
 
 <!-- HERO -->
 <div class="hero" id="heroScreen">
@@ -400,6 +408,11 @@ const MAX_GENERATIONS=4; // 1 original + up to 3 regenerations
 // server can verify it. Anonymous/lead-magnet visitors simply won't
 // have one, and everything works exactly as before for them.
 const handoffToken=new URLSearchParams(window.location.search).get('token');
+// Presence-only check (not signature-verified - see comment above) is
+// fine here since this only controls whether a "back to community"
+// link is visible, not anything sensitive. Worst case of a forged
+// token is someone seeing a link that sends them to a login page.
+if(handoffToken){document.getElementById('communityBackLink').style.display='inline-block';}
 const levelLabels={'absolute-beginner':'Absolute Beginner','beginner':'Beginner','intermediate':'Intermediate','athlete':'Athlete'};
 const goalLabels={'fat-loss':'Fat Loss','muscle-gain':'Muscle Gain','general-fitness':'General Fitness','rehab':'Rehab / Recovery'};
 const equipLabels={'bodyweight':'No Equipment (Bodyweight)','home':'Home Gym (Bands/Dumbbells)','full-gym':'Full Gym Access'};
